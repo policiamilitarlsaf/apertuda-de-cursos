@@ -366,7 +366,7 @@
             width: 100%;
             height: 100%;
             background: rgba(0,0,0,0.8);
-            z-index: 1003; /* Aumentado para estar sobre el panel admin */
+            z-index: 1003;
             justify-content: center;
             align-items: center;
         }
@@ -484,7 +484,7 @@
             max-height: 85vh;
             overflow-y: auto;
             padding: 20px;
-            z-index: 1002; /* Menor que los modales (1003) */
+            z-index: 1002;
             border: 2px solid #c4a747;
             box-shadow: 0 0 30px black;
             display: none;
@@ -813,7 +813,7 @@
                 expiresAt: null, 
                 totalSlots: DEFAULT_SLOTS, 
                 remainingSlots: DEFAULT_SLOTS,
-                horarios: [...DEFAULT_HORARIOS] // copia independiente
+                horarios: [...DEFAULT_HORARIOS]
             };
         });
         return state;
@@ -843,7 +843,6 @@
 
     function activateCourse(code, durationHours = DEFAULT_DURATION_HOURS, totalSlots = DEFAULT_SLOTS) {
         const expiresAt = Date.now() + durationHours * 60 * 60 * 1000;
-        // Conservar horarios existentes o usar por defecto
         const existingHorarios = coursesState[code]?.horarios || [...DEFAULT_HORARIOS];
         coursesState[code] = {
             active: true,
@@ -891,7 +890,6 @@
             coursesState[code].horarios = [...horariosArray];
             saveCoursesState(coursesState);
             if (currentSelectedAircraft && currentSelectedAircraft.code === code) {
-                // Actualizar vista detalle si está visible
                 showAircraftDetails(currentSelectedAircraft);
             }
         }
@@ -1238,7 +1236,6 @@
                 horariosModalList.appendChild(span);
             });
         }
-        // Eventos para eliminar
         document.querySelectorAll(".remove-horario-modal").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 const idx = parseInt(btn.getAttribute("data-idx"));
@@ -1256,7 +1253,6 @@
         const horariosCurr = getCourseHorarios(currentEditingCourseCode);
         if (!horariosCurr.includes(newHour)) {
             horariosCurr.push(newHour);
-            // Ordenar alfabéticamente (por hora)
             horariosCurr.sort((a,b) => a.localeCompare(b));
             updateCourseHorarios(currentEditingCourseCode, horariosCurr);
             renderHorariosModalList();
@@ -1361,21 +1357,67 @@
     document.getElementById("adminButton").addEventListener("click", showPasswordModal);
     document.getElementById("closeAdminPanel").addEventListener("click", closeAdminPanel);
 
-    // ---------- Ocultar consola ----------
-    (function() {
-        setInterval(() => console.clear(), 2000);
-        const noop = () => {};
-        console.log = console.info = console.warn = console.error = console.debug = console.trace = console.table = noop;
-        window.addEventListener('error', (e) => { e.preventDefault(); return true; });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'U')) {
-                e.preventDefault();
-                console.clear();
-            }
-        });
-    })();
+    // ---------- PROTECCIÓN ----------
+    // Deshabilitar clic derecho
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        return false;
+    });
 
-    // Intervalo de expiración
+    // Deshabilitar combinaciones de teclado para abrir herramientas de desarrollador
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'F12') {
+            e.preventDefault();
+            return false;
+        }
+        if ((e.ctrlKey && e.shiftKey && e.key === 'I') || (e.metaKey && e.altKey && e.key === 'I')) {
+            e.preventDefault();
+            return false;
+        }
+        if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+            e.preventDefault();
+            return false;
+        }
+        if ((e.ctrlKey && e.key === 'u') || (e.metaKey && e.key === 'u')) {
+            e.preventDefault();
+            return false;
+        }
+        if ((e.ctrlKey && e.key === 's') || (e.metaKey && e.key === 's')) {
+            e.preventDefault();
+            return false;
+        }
+        if (e.ctrlKey && e.shiftKey && e.key === 'J') {
+            e.preventDefault();
+            return false;
+        }
+        if (e.ctrlKey && e.shiftKey && e.key === 'K') {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // Limpiar consola cada 2 segundos
+    setInterval(() => {
+        console.clear();
+    }, 2000);
+
+    // Anular todas las funciones de consola
+    const noop = () => {};
+    console.log = noop;
+    console.info = noop;
+    console.warn = noop;
+    console.error = noop;
+    console.debug = noop;
+    console.trace = noop;
+    console.table = noop;
+
+    // Evitar que se muestren errores no capturados en consola
+    window.addEventListener('error', (e) => {
+        e.preventDefault();
+        return true;
+    });
+
+    // ---------- Intervalo de expiración ----------
     setInterval(() => {
         checkExpirations();
         if (currentSelectedAircraft && !isCourseActive(currentSelectedAircraft.code)) resetToFleet();
@@ -1440,97 +1482,6 @@
             showMessage("Sin curso seleccionado", "Primero selecciona una aeronave con curso activo desde el catálogo.");
         }
     });
-    // Inicialización
-    document.addEventListener("DOMContentLoaded", () => {
-        fillHourSelectForModal();
-        checkExpirations();
-        renderButtons();
-
-        document.getElementById("backToFleetBtn").addEventListener("click", resetToFleet);
-        document.getElementById("detailViewContainer").style.display = "none";
-        document.getElementById("fleetButtonsContainer").style.display = "block";
-    });
-
-    closeModalBtn.addEventListener("click", closeModal);
-    submitBtn.addEventListener("click", handleSubmit);
-    window.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
-
-    document.getElementById("ctaMockBtn").addEventListener("click", () => {
-        if (currentSelectedAircraft && isCourseActive(currentSelectedAircraft.code)) {
-            const slots = getCourseSlots(currentSelectedAircraft.code);
-            const horarios = getCourseHorarios(currentSelectedAircraft.code);
-            if (slots.remaining <= 0) {
-                showMessage("Cupos agotados", "Lo sentimos, los cupos para este curso se han agotado.");
-            } else if (horarios.length === 0) {
-                showMessage("Sin horarios", "Este curso no tiene horarios configurados. Contacte al administrador.");
-            } else {
-                openModal();
-            }
-        } else {
-            showMessage("Sin curso seleccionado", "Primero selecciona una aeronave con curso activo desde el catálogo.");
-        }
-    });
-
-    // ========== AQUÍ VA EL BLOQUE DE PROTECCIÓN ==========
-    // Deshabilitar clic derecho
-    document.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
-        return false;
-    });
-
-    // Deshabilitar combinaciones de teclado para abrir herramientas de desarrollador
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'F12') {
-            e.preventDefault();
-            return false;
-        }
-        if ((e.ctrlKey && e.shiftKey && e.key === 'I') || (e.metaKey && e.altKey && e.key === 'I')) {
-            e.preventDefault();
-            return false;
-        }
-        if (e.ctrlKey && e.shiftKey && e.key === 'C') {
-            e.preventDefault();
-            return false;
-        }
-        if ((e.ctrlKey && e.key === 'u') || (e.metaKey && e.key === 'u')) {
-            e.preventDefault();
-            return false;
-        }
-        if ((e.ctrlKey && e.key === 's') || (e.metaKey && e.key === 's')) {
-            e.preventDefault();
-            return false;
-        }
-        if (e.ctrlKey && e.shiftKey && e.key === 'J') {
-            e.preventDefault();
-            return false;
-        }
-        if (e.ctrlKey && e.shiftKey && e.key === 'K') {
-            e.preventDefault();
-            return false;
-        }
-    });
-
-    // Limpiar consola cada 2 segundos
-    setInterval(() => {
-        console.clear();
-    }, 2000);
-
-    // Anular todas las funciones de consola
-    const noop = () => {};
-    console.log = noop;
-    console.info = noop;
-    console.warn = noop;
-    console.error = noop;
-    console.debug = noop;
-    console.trace = noop;
-    console.table = noop;
-
-    // Evitar que se muestren errores no capturados en consola
-    window.addEventListener('error', (e) => {
-        e.preventDefault();
-        return true;
-    });
-    // ========== FIN DEL BLOQUE DE PROTECCIÓN ==========
 </script>
 </body>
 </html>
