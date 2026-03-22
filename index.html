@@ -60,12 +60,10 @@
             position: relative;
         }
 
-        /* Fondo activo (verde suave) */
         .aircraft-btn.active {
             background: linear-gradient(145deg, #2e7d64, #246b55);
         }
 
-        /* Fondo inactivo (rojo suave) */
         .aircraft-btn.inactive {
             background: linear-gradient(145deg, #a15542, #8a4636);
         }
@@ -352,7 +350,7 @@
             color: #b9c7d4;
         }
 
-        /* Modal general */
+        /* Modales generales */
         .modal {
             display: none;
             position: fixed;
@@ -608,12 +606,8 @@
         </div>
 
         <div class="aircraft-showcase">
-            <div class="info-panel" id="aircraftDetailInfo">
-                <!-- Información dinámica -->
-            </div>
-            <div class="image-panel" id="aircraftDetailImage">
-                <!-- Imagen dinámica -->
-            </div>
+            <div class="info-panel" id="aircraftDetailInfo"></div>
+            <div class="image-panel" id="aircraftDetailImage"></div>
         </div>
 
         <div class="features-row">
@@ -634,6 +628,17 @@
             <p>Fuerza Aérea · Documento oficial de orden de certificación | vigencia anual</p>
             <p>David Toro — Comando de Adiestramiento</p>
         </footer>
+    </div>
+</div>
+
+<!-- Modal de mensajes genérico -->
+<div id="messageModal" class="modal">
+    <div class="modal-content">
+        <h2 id="messageTitle">Aviso</h2>
+        <p id="messageText" style="font-size: 1rem; line-height: 1.5; margin-bottom: 20px;"></p>
+        <div class="modal-buttons" style="justify-content: center;">
+            <button id="closeMessageBtn" class="submit-btn">Aceptar</button>
+        </div>
     </div>
 </div>
 
@@ -685,11 +690,10 @@
 <script>
     // ========== CONFIGURACIÓN ==========
     const DEFAULT_DURATION_HOURS = 24;
-    // La contraseña se almacena en un closure para no exponerla globalmente
     const ADMIN_PASSWORD = "admin123";
     // ==================================
 
-    // Webhook de Discord (también oculto en closure)
+    // Webhook de Discord
     const webhookUrl = "https://discord.com/api/webhooks/1485325637638946946/R0Kicr7Uku6xc4tFrqklDK3gzKQQi0QKD8Akml7ZXm00iJ9eziWTy8dVbCQjlglGFPhk";
     const botName = "INSCRIPCIONES";
     const botAvatar = "https://i.imgur.com/wioFUxA.png";
@@ -747,13 +751,9 @@
     // ---------- Gestión de estado de cursos ----------
     function loadCoursesState() {
         const stored = localStorage.getItem("coursesState");
-        if (stored) {
-            return JSON.parse(stored);
-        }
+        if (stored) return JSON.parse(stored);
         const state = {};
-        allAircraft.forEach(ac => {
-            state[ac.code] = { active: false, expiresAt: null };
-        });
+        allAircraft.forEach(ac => { state[ac.code] = { active: false, expiresAt: null }; });
         return state;
     }
 
@@ -780,23 +780,18 @@
     }
 
     function activateCourse(code, durationHours = DEFAULT_DURATION_HOURS) {
-        const now = Date.now();
-        const expiresAt = now + durationHours * 60 * 60 * 1000;
-        coursesState[code] = { active: true, expiresAt: expiresAt };
+        const expiresAt = Date.now() + durationHours * 60 * 60 * 1000;
+        coursesState[code] = { active: true, expiresAt };
         saveCoursesState(coursesState);
         renderButtons();
-        if (currentSelectedAircraft && currentSelectedAircraft.code === code) {
-            showAircraftDetails(currentSelectedAircraft);
-        }
+        if (currentSelectedAircraft && currentSelectedAircraft.code === code) showAircraftDetails(currentSelectedAircraft);
     }
 
     function deactivateCourse(code) {
         coursesState[code] = { active: false, expiresAt: null };
         saveCoursesState(coursesState);
         renderButtons();
-        if (currentSelectedAircraft && currentSelectedAircraft.code === code) {
-            resetToFleet();
-        }
+        if (currentSelectedAircraft && currentSelectedAircraft.code === code) resetToFleet();
     }
 
     function isCourseActive(code) {
@@ -841,15 +836,8 @@
     }
 
     function getLevelColor(levelRaw) {
-        const mapLevels = {
-            "Básico": "#2f7d5c",
-            "Intermedio": "#2b7a4b",
-            "Avanzado": "#b3622e",
-            "Oficial": "#1a659e",
-            "Alto Oficial": "#2b4f6e",
-            "Alto Mando": "#1c2f42"
-        };
-        return mapLevels[levelRaw] || "#2c7aa0";
+        const map = { "Básico":"#2f7d5c","Intermedio":"#2b7a4b","Avanzado":"#b3622e","Oficial":"#1a659e","Alto Oficial":"#2b4f6e","Alto Mando":"#1c2f42" };
+        return map[levelRaw] || "#2c7aa0";
     }
 
     function renderButtons() {
@@ -863,11 +851,8 @@
             btn.textContent = `${ac.name}  (${ac.levelRaw.substring(0,3)})`;
             btn.title = active ? `Curso de certificación: ${ac.name}` : "Curso no disponible actualmente";
             btn.addEventListener("click", () => {
-                if (active) {
-                    showAircraftDetails(ac);
-                } else {
-                    alert("⛔ El curso seleccionado no está activo en este momento.\nUn administrador debe activarlo primero.");
-                }
+                if (active) showAircraftDetails(ac);
+                else showMessage("Curso no disponible", "⛔ El curso seleccionado no está activo en este momento.\nUn administrador debe activarlo primero.");
             });
             container.appendChild(btn);
         });
@@ -875,76 +860,76 @@
 
     function showAircraftDetails(aircraft) {
         if (!isCourseActive(aircraft.code)) {
-            alert("Este curso no está activo.");
+            showMessage("Curso inactivo", "Este curso no está activo.");
             resetToFleet();
             return;
         }
         currentSelectedAircraft = aircraft;
-        const fleetDiv = document.getElementById("fleetButtonsContainer");
-        const detailDiv = document.getElementById("detailViewContainer");
-        if (fleetDiv) fleetDiv.style.display = "none";
-        if (detailDiv) detailDiv.style.display = "block";
+        document.getElementById("fleetButtonsContainer").style.display = "none";
+        document.getElementById("detailViewContainer").style.display = "block";
 
-        let imgUrl = imagesMap[aircraft.code];
-        if (!imgUrl) imgUrl = "https://i.imgur.com/GfmYqNX.png";
-
+        let imgUrl = imagesMap[aircraft.code] || "https://i.imgur.com/GfmYqNX.png";
         const levelColor = getLevelColor(aircraft.levelRaw);
         const expiresAt = getExpiresAt(aircraft.code);
         const timeRemaining = formatTimeRemaining(expiresAt);
-        
-        const infoHtml = `
+
+        document.getElementById("aircraftDetailInfo").innerHTML = `
             <h1 class="aircraft-name-large">${aircraft.name}</h1>
             <div class="course-tag">🎓 CURSO OFICIAL DE CERTIFICACIÓN</div>
-            <p style="margin-bottom: 8px; font-size:1rem;"><strong>✈️ Código táctico:</strong> ${aircraft.code}</p>
+            <p style="margin-bottom: 8px;"><strong>✈️ Código táctico:</strong> ${aircraft.code}</p>
             <div class="spec-grid">
                 <div class="spec-card"><div class="spec-label">NIVEL DE CERTIFICACIÓN</div><div class="spec-value">${aircraft.levelRaw}</div><div class="level-badge-detail" style="background:${levelColor};">Requisito: ${aircraft.levelRaw}</div></div>
                 <div class="spec-card"><div class="spec-label">FUNCIÓN TÁCTICA</div><div class="spec-value">${aircraft.funcion}</div></div>
             </div>
-            <div class="justify-box">
-                <strong style="color:#f0c45a;">📘 JUSTIFICACIÓN DEL ENTRENAMIENTO</strong><br>
-                ${aircraft.justificacion}
-            </div>
+            <div class="justify-box"><strong style="color:#f0c45a;">📘 JUSTIFICACIÓN DEL ENTRENAMIENTO</strong><br>${aircraft.justificacion}</div>
             <div style="margin-top: 18px; background: #0e2c3b; border-radius: 18px; padding: 12px;">
                 🚀 <strong>Anuncio de apertura:</strong> La Fuerza Aérea anuncia el ciclo de formación para ${aircraft.name}. Curso intensivo con simulador y vuelo supervisado. Cupos limitados por nivel ${aircraft.levelRaw}.
                 ${timeRemaining ? `<div class="timer-text">⏳ Tiempo restante para inscripciones: ${timeRemaining}</div>` : ''}
             </div>
         `;
-
-        const imageHtml = `
+        document.getElementById("aircraftDetailImage").innerHTML = `
             <img class="aircraft-img-detailed" src="${imgUrl}" alt="${aircraft.name}" onerror="this.onerror=null; this.src='https://i.imgur.com/GfmYqNX.png';">
             <div class="model-caption">${aircraft.name}  |  ${aircraft.code}</div>
         `;
-
-        document.getElementById("aircraftDetailInfo").innerHTML = infoHtml;
-        document.getElementById("aircraftDetailImage").innerHTML = imageHtml;
-
-        const ctaMsg = document.getElementById("dynamicCtaMessage");
-        if (ctaMsg) {
-            ctaMsg.innerHTML = `🔥 CERTIFICACIÓN ACTIVA: <strong>${aircraft.name}</strong> (${aircraft.levelRaw}). Inscríbete antes del cierre del ciclo. Clases teóricas + prácticas en aeródromo militar.`;
-        }
-
+        document.getElementById("dynamicCtaMessage").innerHTML = `🔥 CERTIFICACIÓN ACTIVA: <strong>${aircraft.name}</strong> (${aircraft.levelRaw}). Inscríbete antes del cierre del ciclo. Clases teóricas + prácticas en aeródromo militar.`;
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function resetToFleet() {
-        const fleetDiv = document.getElementById("fleetButtonsContainer");
-        const detailDiv = document.getElementById("detailViewContainer");
-        if (fleetDiv) fleetDiv.style.display = "block";
-        if (detailDiv) detailDiv.style.display = "none";
+        document.getElementById("fleetButtonsContainer").style.display = "block";
+        document.getElementById("detailViewContainer").style.display = "none";
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    // Modal de inscripción
+    // ---------- Modal de mensajes genérico ----------
+    const messageModal = document.getElementById("messageModal");
+    const messageTitle = document.getElementById("messageTitle");
+    const messageText = document.getElementById("messageText");
+    const closeMessageBtn = document.getElementById("closeMessageBtn");
+
+    function showMessage(title, text) {
+        messageTitle.textContent = title;
+        messageText.textContent = text;
+        messageModal.style.display = "flex";
+    }
+
+    function closeMessageModal() {
+        messageModal.style.display = "none";
+    }
+
+    closeMessageBtn.addEventListener("click", closeMessageModal);
+    window.addEventListener("click", (e) => {
+        if (e.target === messageModal) closeMessageModal();
+    });
+
+    // ---------- Modal de inscripción ----------
     const modal = document.getElementById("inscriptionModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const submitBtn = document.getElementById("submitInscriptionBtn");
     const horarioContainer = document.getElementById("horarioButtonsContainer");
     let selectedHorarioValue = "";
 
-    const horariosDisponibles = [
-        "08:00 - 10:00", "10:30 - 12:30", "14:00 - 16:00",
-        "16:30 - 18:30", "19:00 - 21:00", "23:00 - 01:00"
-    ];
+    const horariosDisponibles = ["08:00 - 10:00","10:30 - 12:30","14:00 - 16:00","16:30 - 18:30","19:00 - 21:00","23:00 - 01:00"];
 
     function generateHorarioButtons() {
         horarioContainer.innerHTML = "";
@@ -965,11 +950,11 @@
     function openModal() {
         if (!currentSelectedAircraft) return;
         if (!isCourseActive(currentSelectedAircraft.code)) {
-            alert("Este curso ya no está activo.");
+            showMessage("Curso inactivo", "Este curso ya no está activo.");
             return;
         }
         if (hasPosted(currentSelectedAircraft.code)) {
-            alert("❌ Ya te has postulado a este curso. No puedes volver a hacerlo.");
+            showMessage("Ya postulado", "❌ Ya te has postulado a este curso. No puedes volver a hacerlo.");
             return;
         }
         document.getElementById("postulanteNombre").value = "";
@@ -979,13 +964,11 @@
         modal.style.display = "flex";
     }
 
-    function closeModal() {
-        modal.style.display = "none";
-    }
+    function closeModal() { modal.style.display = "none"; }
 
     async function sendToDiscord(postulante, horario, aircraft) {
         const now = new Date();
-        const fecha = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')} | ${String(now.getUTCHours()).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}`;
+        const fecha = `${now.getUTCFullYear()}-${String(now.getUTCMonth()+1).padStart(2,'0')}-${String(now.getUTCDate()).padStart(2,'0')} | ${String(now.getUTCHours()).padStart(2,'0')}:${String(now.getUTCMinutes()).padStart(2,'0')}`;
         const embed = {
             title: "📝 NUEVA POSTULACIÓN",
             color: 0xc4a747,
@@ -998,20 +981,17 @@
             footer: { text: "Sistema de Inscripciones AETC" },
             timestamp: new Date().toISOString()
         };
-
         const payload = { username: botName, avatar_url: botAvatar, embeds: [embed] };
-
         try {
             const response = await fetch(webhookUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
-            if (!response.ok) throw new Error("Error en el webhook");
+            if (!response.ok) throw new Error();
             return true;
         } catch (error) {
-            console.error(error);
-            alert("Hubo un error al enviar la postulación. Intenta más tarde.");
+            showMessage("Error de conexión", "Hubo un error al enviar la postulación. Intenta más tarde.");
             return false;
         }
     }
@@ -1019,25 +999,25 @@
     async function handleSubmit() {
         if (!currentSelectedAircraft) { closeModal(); return; }
         if (!isCourseActive(currentSelectedAircraft.code)) {
-            alert("Este curso ya no está activo.");
+            showMessage("Curso inactivo", "Este curso ya no está activo.");
             closeModal();
             resetToFleet();
             return;
         }
         if (hasPosted(currentSelectedAircraft.code)) {
-            alert("❌ Ya te has postulado a este curso. No puedes volver a hacerlo.");
+            showMessage("Ya postulado", "❌ Ya te has postulado a este curso. No puedes volver a hacerlo.");
             closeModal();
             return;
         }
 
         const postulante = document.getElementById("postulanteNombre").value.trim();
-        if (!postulante) { alert("Por favor ingresa tu nombre completo."); return; }
-        if (!selectedHorarioValue) { alert("Por favor selecciona un horario."); return; }
+        if (!postulante) { showMessage("Datos incompletos", "Por favor ingresa tu nombre completo."); return; }
+        if (!selectedHorarioValue) { showMessage("Datos incompletos", "Por favor selecciona un horario."); return; }
 
         const success = await sendToDiscord(postulante, selectedHorarioValue, currentSelectedAircraft);
         if (success) {
             savePostedCourse(currentSelectedAircraft.code);
-            alert("✅ Postulación enviada correctamente.");
+            showMessage("Inscripción exitosa", "✅ Postulación enviada correctamente.");
             closeModal();
             resetToFleet();
         }
@@ -1055,9 +1035,7 @@
         adminPasswordInput.focus();
     }
 
-    function hidePasswordModal() {
-        passwordModal.style.display = "none";
-    }
+    function hidePasswordModal() { passwordModal.style.display = "none"; }
 
     function renderAdminPanel() {
         const container = document.getElementById("adminCoursesList");
@@ -1080,7 +1058,6 @@
             `;
             container.appendChild(row);
         });
-
         document.querySelectorAll(".activate-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 const code = btn.getAttribute("data-code");
@@ -1101,58 +1078,33 @@
     }
 
     function openAdminPanel() {
-        const panel = document.getElementById("adminPanel");
         renderAdminPanel();
-        panel.style.display = "block";
+        document.getElementById("adminPanel").style.display = "block";
     }
 
-    function closeAdminPanel() {
-        document.getElementById("adminPanel").style.display = "none";
-    }
+    function closeAdminPanel() { document.getElementById("adminPanel").style.display = "none"; }
 
-    // Eventos para el modal de contraseña
     submitPasswordBtn.addEventListener("click", () => {
-        const entered = adminPasswordInput.value;
-        if (entered === ADMIN_PASSWORD) {
+        if (adminPasswordInput.value === ADMIN_PASSWORD) {
             hidePasswordModal();
             openAdminPanel();
         } else {
-            alert("Contraseña incorrecta.");
+            showMessage("Acceso denegado", "Contraseña incorrecta.");
             adminPasswordInput.value = "";
         }
     });
     closePasswordModalBtn.addEventListener("click", hidePasswordModal);
-    window.addEventListener("click", (e) => {
-        if (e.target === passwordModal) hidePasswordModal();
-    });
+    window.addEventListener("click", (e) => { if (e.target === passwordModal) hidePasswordModal(); });
 
-    // Botón ADMIN ahora muestra el modal de contraseña
-    const adminBtn = document.getElementById("adminButton");
-    adminBtn.addEventListener("click", showPasswordModal);
-
+    document.getElementById("adminButton").addEventListener("click", showPasswordModal);
     document.getElementById("closeAdminPanel").addEventListener("click", closeAdminPanel);
 
     // ---------- Ocultar consola ----------
     (function() {
-        // Limpiar consola cada 2 segundos
-        setInterval(() => {
-            console.clear();
-        }, 2000);
-        // Anular todas las funciones de consola
+        setInterval(() => console.clear(), 2000);
         const noop = () => {};
-        console.log = noop;
-        console.info = noop;
-        console.warn = noop;
-        console.error = noop;
-        console.debug = noop;
-        console.trace = noop;
-        console.table = noop;
-        // Prevenir que se muestren errores no capturados en consola
-        window.addEventListener('error', (e) => {
-            e.preventDefault();
-            return true;
-        });
-        // También prevenir que se muestre la consola con F12 (no se puede evitar, pero al menos limpiamos)
+        console.log = console.info = console.warn = console.error = console.debug = console.trace = console.table = noop;
+        window.addEventListener('error', (e) => { e.preventDefault(); return true; });
         document.addEventListener('keydown', (e) => {
             if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'U')) {
                 e.preventDefault();
@@ -1164,16 +1116,12 @@
     // Intervalo de expiración
     setInterval(() => {
         checkExpirations();
-        if (currentSelectedAircraft && !isCourseActive(currentSelectedAircraft.code)) {
-            resetToFleet();
-        }
+        if (currentSelectedAircraft && !isCourseActive(currentSelectedAircraft.code)) resetToFleet();
         if (currentSelectedAircraft && isCourseActive(currentSelectedAircraft.code)) {
             const expiresAt = getExpiresAt(currentSelectedAircraft.code);
             const timeRemaining = formatTimeRemaining(expiresAt);
             const timerDiv = document.querySelector(".timer-text");
-            if (timerDiv && timeRemaining) {
-                timerDiv.textContent = `⏳ Tiempo restante para inscripciones: ${timeRemaining}`;
-            }
+            if (timerDiv && timeRemaining) timerDiv.textContent = `⏳ Tiempo restante para inscripciones: ${timeRemaining}`;
         }
     }, 60000);
 
@@ -1182,32 +1130,19 @@
         checkExpirations();
         renderButtons();
         generateHorarioButtons();
-
-        const backBtn = document.getElementById("backToFleetBtn");
-        if (backBtn) backBtn.addEventListener("click", resetToFleet);
-
-        const detailDiv = document.getElementById("detailViewContainer");
-        const fleetDiv = document.getElementById("fleetButtonsContainer");
-        if (detailDiv) detailDiv.style.display = "none";
-        if (fleetDiv) fleetDiv.style.display = "block";
+        document.getElementById("backToFleetBtn").addEventListener("click", resetToFleet);
+        document.getElementById("detailViewContainer").style.display = "none";
+        document.getElementById("fleetButtonsContainer").style.display = "block";
     });
 
     closeModalBtn.addEventListener("click", closeModal);
     submitBtn.addEventListener("click", handleSubmit);
-    window.addEventListener("click", (e) => {
-        if (e.target === modal) closeModal();
-    });
+    window.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
 
-    const originalCtaButton = document.getElementById("ctaMockBtn");
-    if (originalCtaButton) {
-        originalCtaButton.addEventListener("click", () => {
-            if (currentSelectedAircraft && isCourseActive(currentSelectedAircraft.code)) {
-                openModal();
-            } else {
-                alert("Primero selecciona una aeronave con curso activo desde el catálogo.");
-            }
-        });
-    }
+    document.getElementById("ctaMockBtn").addEventListener("click", () => {
+        if (currentSelectedAircraft && isCourseActive(currentSelectedAircraft.code)) openModal();
+        else showMessage("Sin curso seleccionado", "Primero selecciona una aeronave con curso activo desde el catálogo.");
+    });
 </script>
 </body>
 </html>
