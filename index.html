@@ -335,6 +335,13 @@
             background: #ffcd44;
         }
 
+        .cta-button.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            pointer-events: none;
+        }
+
         .inscription-note {
             font-size: 0.8rem;
             margin-top: 18px;
@@ -390,7 +397,7 @@
             font-weight: bold;
         }
 
-        .form-group input {
+        .form-group input, .form-group select {
             width: 100%;
             padding: 12px;
             border-radius: 16px;
@@ -473,8 +480,8 @@
             background: #0a2a3b;
             border-radius: 32px;
             width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
+            max-width: 800px;
+            max-height: 85vh;
             overflow-y: auto;
             padding: 20px;
             z-index: 1002;
@@ -485,6 +492,8 @@
         .admin-panel h3 {
             color: #f0c45a;
             margin-bottom: 15px;
+            border-bottom: 1px solid #c4a747;
+            padding-bottom: 8px;
         }
         .admin-panel .course-row {
             display: flex;
@@ -497,15 +506,15 @@
         }
         .admin-panel .course-name {
             font-weight: bold;
-            min-width: 120px;
+            min-width: 130px;
         }
         .admin-panel .course-status {
             font-size: 0.8rem;
             padding: 4px 8px;
             border-radius: 20px;
         }
-        .admin-panel input {
-            width: 80px;
+        .admin-panel input[type="number"] {
+            width: 70px;
             padding: 4px;
             border-radius: 12px;
             border: none;
@@ -525,10 +534,38 @@
             margin-top: 20px;
             width: 100%;
         }
-        .timer-text {
+        .timer-text, .slots-text {
             font-size: 0.8rem;
             color: #f0c45a;
             margin-top: 5px;
+        }
+        .horario-item {
+            display: inline-block;
+            background: #2c5a7a;
+            padding: 6px 12px;
+            border-radius: 30px;
+            margin: 5px;
+        }
+        .horario-item button {
+            background: none;
+            border: none;
+            color: #ffaa66;
+            margin-left: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .add-horario {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            align-items: center;
+        }
+        .add-horario select {
+            background: #1f4b6e;
+            color: white;
+            padding: 8px;
+            border-radius: 20px;
+            border: none;
         }
 
         @media (max-width: 780px) {
@@ -582,7 +619,7 @@
             <h3 style="font-family: Oswald;">¡CUPOS LIMITADOS PARA CADA CURSO!</h3>
             <p>Selecciona una aeronave y conoce el programa de certificación. Entrenamiento especializado por niveles.</p>
             <div class="inscription-note">
-                <strong>📢 INSCRIPCIONES:</strong> Las inscripciones se cerrarán luego del tiempo establecido.
+                <strong>📢 INSCRIPCIONES:</strong> Las inscripciones se cerrarán luego del tiempo establecido o al agotar cupos.
             </div>
         </div>
         <footer>
@@ -621,7 +658,7 @@
             <p id="dynamicCtaMessage">Selecciona una aeronave para conocer los requisitos y anuncio de apertura.</p>
             <button class="cta-button" id="ctaMockBtn">INSCRIBIRME AHORA</button>
             <div class="inscription-note">
-                * Las inscripciones finalizan al cierre del ciclo táctico. Cupos por escuadrón.
+                * Las inscripciones finalizan al cierre del ciclo táctico o al agotar cupos.
             </div>
         </div>
         <footer>
@@ -684,12 +721,19 @@
 <div id="adminPanel" class="admin-panel">
     <h3>📋 Administración de Cursos</h3>
     <div id="adminCoursesList"></div>
+    <h3 style="margin-top: 25px;">⏰ Gestión de Horarios</h3>
+    <div id="horariosList"></div>
+    <div class="add-horario">
+        <select id="newHourSelect"></select>
+        <button id="addHorarioBtn">➕ Añadir horario</button>
+    </div>
     <button id="closeAdminPanel" class="close-admin">Cerrar</button>
 </div>
 
 <script>
     // ========== CONFIGURACIÓN ==========
     const DEFAULT_DURATION_HOURS = 24;
+    const DEFAULT_SLOTS = 10; // cupos por defecto al activar
     const ADMIN_PASSWORD = "admin123";
     // ==================================
 
@@ -748,12 +792,30 @@
 
     const allAircraft = planesData;
 
-    // ---------- Gestión de estado de cursos ----------
+    // ---------- Gestión de horarios (guardar en localStorage) ----------
+    function loadHorarios() {
+        const stored = localStorage.getItem("horarios");
+        if (stored) return JSON.parse(stored);
+        // Horarios por defecto
+        return ["08:00 - 10:00", "10:30 - 12:30", "14:00 - 16:00", "16:30 - 18:30", "19:00 - 21:00", "23:00 - 01:00"];
+    }
+
+    let horarios = loadHorarios();
+
+    function saveHorarios() {
+        localStorage.setItem("horarios", JSON.stringify(horarios));
+        generateHorarioButtons(); // actualizar botones en el modal de inscripción
+        renderHorariosAdmin();    // actualizar vista admin
+    }
+
+    // ---------- Gestión de estado de cursos (con cupos) ----------
     function loadCoursesState() {
         const stored = localStorage.getItem("coursesState");
         if (stored) return JSON.parse(stored);
         const state = {};
-        allAircraft.forEach(ac => { state[ac.code] = { active: false, expiresAt: null }; });
+        allAircraft.forEach(ac => {
+            state[ac.code] = { active: false, expiresAt: null, totalSlots: DEFAULT_SLOTS, remainingSlots: DEFAULT_SLOTS };
+        });
         return state;
     }
 
@@ -779,19 +841,48 @@
         }
     }
 
-    function activateCourse(code, durationHours = DEFAULT_DURATION_HOURS) {
+    function activateCourse(code, durationHours = DEFAULT_DURATION_HOURS, totalSlots = DEFAULT_SLOTS) {
         const expiresAt = Date.now() + durationHours * 60 * 60 * 1000;
-        coursesState[code] = { active: true, expiresAt };
+        coursesState[code] = {
+            active: true,
+            expiresAt: expiresAt,
+            totalSlots: totalSlots,
+            remainingSlots: totalSlots
+        };
         saveCoursesState(coursesState);
         renderButtons();
         if (currentSelectedAircraft && currentSelectedAircraft.code === code) showAircraftDetails(currentSelectedAircraft);
     }
 
     function deactivateCourse(code) {
-        coursesState[code] = { active: false, expiresAt: null };
+        coursesState[code] = { active: false, expiresAt: null, totalSlots: DEFAULT_SLOTS, remainingSlots: DEFAULT_SLOTS };
         saveCoursesState(coursesState);
         renderButtons();
         if (currentSelectedAircraft && currentSelectedAircraft.code === code) resetToFleet();
+    }
+
+    function updateCourseSlots(code, totalSlots) {
+        if (coursesState[code]) {
+            coursesState[code].totalSlots = totalSlots;
+            // Si el curso está activo y los cupos restantes exceden los nuevos totales, ajustamos
+            if (coursesState[code].remainingSlots > totalSlots) {
+                coursesState[code].remainingSlots = totalSlots;
+            }
+            saveCoursesState(coursesState);
+            renderButtons();
+            if (currentSelectedAircraft && currentSelectedAircraft.code === code) showAircraftDetails(currentSelectedAircraft);
+        }
+    }
+
+    function consumeSlot(code) {
+        if (!coursesState[code] || !coursesState[code].active) return false;
+        if (coursesState[code].remainingSlots > 0) {
+            coursesState[code].remainingSlots--;
+            saveCoursesState(coursesState);
+            if (currentSelectedAircraft && currentSelectedAircraft.code === code) showAircraftDetails(currentSelectedAircraft);
+            return true;
+        }
+        return false;
     }
 
     function isCourseActive(code) {
@@ -801,6 +892,11 @@
             saveCoursesState(coursesState);
         }
         return coursesState[code] ? coursesState[code].active : false;
+    }
+
+    function getCourseSlots(code) {
+        if (!coursesState[code]) return { total: DEFAULT_SLOTS, remaining: DEFAULT_SLOTS };
+        return { total: coursesState[code].totalSlots, remaining: coursesState[code].remainingSlots };
     }
 
     function getExpiresAt(code) {
@@ -872,6 +968,9 @@
         const levelColor = getLevelColor(aircraft.levelRaw);
         const expiresAt = getExpiresAt(aircraft.code);
         const timeRemaining = formatTimeRemaining(expiresAt);
+        const slots = getCourseSlots(aircraft.code);
+        const slotsText = `🎟️ Cupos disponibles: ${slots.remaining} / ${slots.total}`;
+        const slotsWarning = slots.remaining <= 0 ? '<div class="slots-text" style="color:#ffaa66;">⚠️ Cupos agotados para este curso</div>' : '';
 
         document.getElementById("aircraftDetailInfo").innerHTML = `
             <h1 class="aircraft-name-large">${aircraft.name}</h1>
@@ -885,6 +984,8 @@
             <div style="margin-top: 18px; background: #0e2c3b; border-radius: 18px; padding: 12px;">
                 🚀 <strong>Anuncio de apertura:</strong> La Fuerza Aérea anuncia el ciclo de formación para ${aircraft.name}. Curso intensivo con simulador y vuelo supervisado. Cupos limitados por nivel ${aircraft.levelRaw}.
                 ${timeRemaining ? `<div class="timer-text">⏳ Tiempo restante para inscripciones: ${timeRemaining}</div>` : ''}
+                <div class="slots-text">${slotsText}</div>
+                ${slotsWarning}
             </div>
         `;
         document.getElementById("aircraftDetailImage").innerHTML = `
@@ -892,6 +993,16 @@
             <div class="model-caption">${aircraft.name}  |  ${aircraft.code}</div>
         `;
         document.getElementById("dynamicCtaMessage").innerHTML = `🔥 CERTIFICACIÓN ACTIVA: <strong>${aircraft.name}</strong> (${aircraft.levelRaw}). Inscríbete antes del cierre del ciclo. Clases teóricas + prácticas en aeródromo militar.`;
+        
+        // Deshabilitar botón si no hay cupos
+        const ctaBtn = document.getElementById("ctaMockBtn");
+        if (slots.remaining <= 0) {
+            ctaBtn.classList.add("disabled");
+            ctaBtn.title = "Cupos agotados";
+        } else {
+            ctaBtn.classList.remove("disabled");
+            ctaBtn.title = "";
+        }
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
@@ -929,11 +1040,9 @@
     const horarioContainer = document.getElementById("horarioButtonsContainer");
     let selectedHorarioValue = "";
 
-    const horariosDisponibles = ["08:00 - 10:00","10:30 - 12:30","14:00 - 16:00","16:30 - 18:30","19:00 - 21:00","23:00 - 01:00"];
-
     function generateHorarioButtons() {
         horarioContainer.innerHTML = "";
-        horariosDisponibles.forEach(horario => {
+        horarios.forEach(horario => {
             const btn = document.createElement("button");
             btn.textContent = horario;
             btn.classList.add("horario-btn");
@@ -951,6 +1060,11 @@
         if (!currentSelectedAircraft) return;
         if (!isCourseActive(currentSelectedAircraft.code)) {
             showMessage("Curso inactivo", "Este curso ya no está activo.");
+            return;
+        }
+        const slots = getCourseSlots(currentSelectedAircraft.code);
+        if (slots.remaining <= 0) {
+            showMessage("Cupos agotados", "Lo sentimos, los cupos para este curso se han agotado.");
             return;
         }
         if (hasPosted(currentSelectedAircraft.code)) {
@@ -1004,6 +1118,13 @@
             resetToFleet();
             return;
         }
+        const slots = getCourseSlots(currentSelectedAircraft.code);
+        if (slots.remaining <= 0) {
+            showMessage("Cupos agotados", "Lo sentimos, los cupos para este curso se han agotado.");
+            closeModal();
+            resetToFleet();
+            return;
+        }
         if (hasPosted(currentSelectedAircraft.code)) {
             showMessage("Ya postulado", "❌ Ya te has postulado a este curso. No puedes volver a hacerlo.");
             closeModal();
@@ -1016,10 +1137,16 @@
 
         const success = await sendToDiscord(postulante, selectedHorarioValue, currentSelectedAircraft);
         if (success) {
-            savePostedCourse(currentSelectedAircraft.code);
-            showMessage("Inscripción exitosa", "✅ Postulación enviada correctamente.");
-            closeModal();
-            resetToFleet();
+            // Consumir cupo
+            if (consumeSlot(currentSelectedAircraft.code)) {
+                savePostedCourse(currentSelectedAircraft.code);
+                showMessage("Inscripción exitosa", "✅ Postulación enviada correctamente.");
+                closeModal();
+                resetToFleet();
+            } else {
+                showMessage("Error", "No se pudo reservar el cupo. Por favor intente de nuevo.");
+                closeModal();
+            }
         }
     }
 
@@ -1037,7 +1164,9 @@
 
     function hidePasswordModal() { passwordModal.style.display = "none"; }
 
+    // Renderizado del panel de admin (cursos + horarios)
     function renderAdminPanel() {
+        // Cursos
         const container = document.getElementById("adminCoursesList");
         if (!container) return;
         container.innerHTML = "";
@@ -1045,6 +1174,7 @@
             const active = isCourseActive(ac.code);
             const expiresAt = getExpiresAt(ac.code);
             const timeRemaining = formatTimeRemaining(expiresAt);
+            const slots = getCourseSlots(ac.code);
             const row = document.createElement("div");
             row.className = "course-row";
             row.innerHTML = `
@@ -1052,19 +1182,26 @@
                 <div class="course-status" style="background: ${active ? '#2f7d5c' : '#5a3a2e'}">
                     ${active ? `🟢 Activo (${timeRemaining})` : '🔴 Inactivo'}
                 </div>
-                <input type="number" id="hours-${ac.code}" placeholder="Horas" value="${DEFAULT_DURATION_HOURS}" min="1" step="1" style="width: 80px;">
+                <div><span style="font-size:0.8rem;">Cupos:</span>
+                    <input type="number" id="totalSlots-${ac.code}" value="${slots.total}" min="1" step="1" style="width: 60px;">
+                </div>
+                <div><span style="font-size:0.8rem;">Duración (h):</span>
+                    <input type="number" id="duration-${ac.code}" placeholder="Horas" value="${DEFAULT_DURATION_HOURS}" min="1" step="1" style="width: 70px;">
+                </div>
                 <button class="activate-btn" data-code="${ac.code}">Activar</button>
                 <button class="deactivate-btn" data-code="${ac.code}" ${!active ? 'disabled' : ''}>Desactivar</button>
+                <button class="update-slots-btn" data-code="${ac.code}">Actualizar cupos</button>
             `;
             container.appendChild(row);
         });
+
+        // Eventos para botones de cursos
         document.querySelectorAll(".activate-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 const code = btn.getAttribute("data-code");
-                const hoursInput = document.getElementById(`hours-${code}`);
-                let hours = parseInt(hoursInput.value);
-                if (isNaN(hours) || hours < 1) hours = DEFAULT_DURATION_HOURS;
-                activateCourse(code, hours);
+                const duration = parseInt(document.getElementById(`duration-${code}`).value) || DEFAULT_DURATION_HOURS;
+                const totalSlots = parseInt(document.getElementById(`totalSlots-${code}`).value) || DEFAULT_SLOTS;
+                activateCourse(code, duration, totalSlots);
                 renderAdminPanel();
             });
         });
@@ -1075,6 +1212,65 @@
                 renderAdminPanel();
             });
         });
+        document.querySelectorAll(".update-slots-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                const code = btn.getAttribute("data-code");
+                const newTotal = parseInt(document.getElementById(`totalSlots-${code}`).value);
+                if (!isNaN(newTotal) && newTotal > 0) {
+                    updateCourseSlots(code, newTotal);
+                    renderAdminPanel();
+                }
+            });
+        });
+
+        // Horarios
+        renderHorariosAdmin();
+    }
+
+    function renderHorariosAdmin() {
+        const horariosContainer = document.getElementById("horariosList");
+        if (!horariosContainer) return;
+        horariosContainer.innerHTML = "";
+        horarios.forEach((horario, idx) => {
+            const span = document.createElement("span");
+            span.className = "horario-item";
+            span.innerHTML = `${horario} <button class="remove-horario" data-index="${idx}">✖</button>`;
+            horariosContainer.appendChild(span);
+        });
+        document.querySelectorAll(".remove-horario").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                const idx = parseInt(btn.getAttribute("data-index"));
+                horarios.splice(idx, 1);
+                saveHorarios();
+                renderAdminPanel(); // refrescar
+            });
+        });
+    }
+
+    function fillHourSelect() {
+        const select = document.getElementById("newHourSelect");
+        select.innerHTML = "";
+        for (let h = 0; h < 24; h++) {
+            for (let m of [0, 30]) {
+                const hourStr = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+                const option = document.createElement("option");
+                option.value = hourStr;
+                option.textContent = hourStr;
+                select.appendChild(option);
+            }
+        }
+    }
+
+    function addHorario() {
+        const select = document.getElementById("newHourSelect");
+        const newHour = select.value;
+        if (!horarios.includes(newHour)) {
+            horarios.push(newHour);
+            saveHorarios();
+            renderAdminPanel();
+        } else {
+            showMessage("Horario duplicado", "Ese horario ya está en la lista.");
+        }
     }
 
     function openAdminPanel() {
@@ -1098,6 +1294,7 @@
 
     document.getElementById("adminButton").addEventListener("click", showPasswordModal);
     document.getElementById("closeAdminPanel").addEventListener("click", closeAdminPanel);
+    document.getElementById("addHorarioBtn").addEventListener("click", addHorario);
 
     // ---------- Ocultar consola ----------
     (function() {
@@ -1120,16 +1317,38 @@
         if (currentSelectedAircraft && isCourseActive(currentSelectedAircraft.code)) {
             const expiresAt = getExpiresAt(currentSelectedAircraft.code);
             const timeRemaining = formatTimeRemaining(expiresAt);
+            const slots = getCourseSlots(currentSelectedAircraft.code);
             const timerDiv = document.querySelector(".timer-text");
+            const slotsDiv = document.querySelector(".slots-text");
             if (timerDiv && timeRemaining) timerDiv.textContent = `⏳ Tiempo restante para inscripciones: ${timeRemaining}`;
+            if (slotsDiv) slotsDiv.textContent = `🎟️ Cupos disponibles: ${slots.remaining} / ${slots.total}`;
+            const warningDiv = document.querySelector(".slots-text + .slots-text");
+            if (slots.remaining <= 0 && !warningDiv) {
+                const container = document.querySelector(".info-panel div:last-child");
+                if (container && !container.querySelector(".slots-warning")) {
+                    const warn = document.createElement("div");
+                    warn.className = "slots-text slots-warning";
+                    warn.style.color = "#ffaa66";
+                    warn.textContent = "⚠️ Cupos agotados para este curso";
+                    container.appendChild(warn);
+                }
+            } else if (slots.remaining > 0) {
+                const warn = document.querySelector(".slots-warning");
+                if (warn) warn.remove();
+            }
+            const ctaBtn = document.getElementById("ctaMockBtn");
+            if (slots.remaining <= 0) ctaBtn.classList.add("disabled");
+            else ctaBtn.classList.remove("disabled");
         }
     }, 60000);
 
     // Inicialización
     document.addEventListener("DOMContentLoaded", () => {
+        fillHourSelect();
         checkExpirations();
         renderButtons();
         generateHorarioButtons();
+
         document.getElementById("backToFleetBtn").addEventListener("click", resetToFleet);
         document.getElementById("detailViewContainer").style.display = "none";
         document.getElementById("fleetButtonsContainer").style.display = "block";
@@ -1140,8 +1359,13 @@
     window.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
 
     document.getElementById("ctaMockBtn").addEventListener("click", () => {
-        if (currentSelectedAircraft && isCourseActive(currentSelectedAircraft.code)) openModal();
-        else showMessage("Sin curso seleccionado", "Primero selecciona una aeronave con curso activo desde el catálogo.");
+        if (currentSelectedAircraft && isCourseActive(currentSelectedAircraft.code)) {
+            const slots = getCourseSlots(currentSelectedAircraft.code);
+            if (slots.remaining > 0) openModal();
+            else showMessage("Cupos agotados", "Lo sentimos, los cupos para este curso se han agotado.");
+        } else {
+            showMessage("Sin curso seleccionado", "Primero selecciona una aeronave con curso activo desde el catálogo.");
+        }
     });
 </script>
 </body>
