@@ -480,7 +480,7 @@
             background: #0a2a3b;
             border-radius: 32px;
             width: 90%;
-            max-width: 800px;
+            max-width: 900px;
             max-height: 85vh;
             overflow-y: auto;
             padding: 20px;
@@ -714,6 +714,21 @@
     </div>
 </div>
 
+<!-- Modal para editar horarios de un curso específico -->
+<div id="horariosModal" class="modal">
+    <div class="modal-content">
+        <h2 id="horariosModalTitle">Editar horarios</h2>
+        <div id="horariosModalList" style="margin-bottom: 20px;"></div>
+        <div class="add-horario" style="margin-top: 10px;">
+            <select id="modalNewHourSelect"></select>
+            <button id="modalAddHorarioBtn" class="submit-btn">➕ Añadir</button>
+        </div>
+        <div class="modal-buttons">
+            <button id="closeHorariosModalBtn" class="cancel-btn">Cerrar</button>
+        </div>
+    </div>
+</div>
+
 <!-- Botón flotante de administración -->
 <button id="adminButton" class="admin-button">⚙️ ADMIN</button>
 
@@ -721,20 +736,15 @@
 <div id="adminPanel" class="admin-panel">
     <h3>📋 Administración de Cursos</h3>
     <div id="adminCoursesList"></div>
-    <h3 style="margin-top: 25px;">⏰ Gestión de Horarios</h3>
-    <div id="horariosList"></div>
-    <div class="add-horario">
-        <select id="newHourSelect"></select>
-        <button id="addHorarioBtn">➕ Añadir horario</button>
-    </div>
     <button id="closeAdminPanel" class="close-admin">Cerrar</button>
 </div>
 
 <script>
     // ========== CONFIGURACIÓN ==========
     const DEFAULT_DURATION_HOURS = 24;
-    const DEFAULT_SLOTS = 10; // cupos por defecto al activar
+    const DEFAULT_SLOTS = 10;
     const ADMIN_PASSWORD = "admin123";
+    const DEFAULT_HORARIOS = ["08:00 - 10:00", "10:30 - 12:30", "14:00 - 16:00", "16:30 - 18:30", "19:00 - 21:00", "23:00 - 01:00"];
     // ==================================
 
     // Webhook de Discord
@@ -792,29 +802,19 @@
 
     const allAircraft = planesData;
 
-    // ---------- Gestión de horarios (guardar en localStorage) ----------
-    function loadHorarios() {
-        const stored = localStorage.getItem("horarios");
-        if (stored) return JSON.parse(stored);
-        // Horarios por defecto
-        return ["08:00 - 10:00", "10:30 - 12:30", "14:00 - 16:00", "16:30 - 18:30", "19:00 - 21:00", "23:00 - 01:00"];
-    }
-
-    let horarios = loadHorarios();
-
-    function saveHorarios() {
-        localStorage.setItem("horarios", JSON.stringify(horarios));
-        generateHorarioButtons(); // actualizar botones en el modal de inscripción
-        renderHorariosAdmin();    // actualizar vista admin
-    }
-
-    // ---------- Gestión de estado de cursos (con cupos) ----------
+    // ---------- Gestión de estado de cursos (con horarios individuales) ----------
     function loadCoursesState() {
         const stored = localStorage.getItem("coursesState");
         if (stored) return JSON.parse(stored);
         const state = {};
         allAircraft.forEach(ac => {
-            state[ac.code] = { active: false, expiresAt: null, totalSlots: DEFAULT_SLOTS, remainingSlots: DEFAULT_SLOTS };
+            state[ac.code] = { 
+                active: false, 
+                expiresAt: null, 
+                totalSlots: DEFAULT_SLOTS, 
+                remainingSlots: DEFAULT_SLOTS,
+                horarios: [...DEFAULT_HORARIOS] // copia independiente
+            };
         });
         return state;
     }
@@ -843,11 +843,14 @@
 
     function activateCourse(code, durationHours = DEFAULT_DURATION_HOURS, totalSlots = DEFAULT_SLOTS) {
         const expiresAt = Date.now() + durationHours * 60 * 60 * 1000;
+        // Conservar horarios existentes o usar por defecto
+        const existingHorarios = coursesState[code]?.horarios || [...DEFAULT_HORARIOS];
         coursesState[code] = {
             active: true,
             expiresAt: expiresAt,
             totalSlots: totalSlots,
-            remainingSlots: totalSlots
+            remainingSlots: totalSlots,
+            horarios: existingHorarios
         };
         saveCoursesState(coursesState);
         renderButtons();
@@ -855,7 +858,13 @@
     }
 
     function deactivateCourse(code) {
-        coursesState[code] = { active: false, expiresAt: null, totalSlots: DEFAULT_SLOTS, remainingSlots: DEFAULT_SLOTS };
+        coursesState[code] = { 
+            active: false, 
+            expiresAt: null, 
+            totalSlots: DEFAULT_SLOTS, 
+            remainingSlots: DEFAULT_SLOTS,
+            horarios: coursesState[code]?.horarios || [...DEFAULT_HORARIOS]
+        };
         saveCoursesState(coursesState);
         renderButtons();
         if (currentSelectedAircraft && currentSelectedAircraft.code === code) resetToFleet();
@@ -864,13 +873,27 @@
     function updateCourseSlots(code, totalSlots) {
         if (coursesState[code]) {
             coursesState[code].totalSlots = totalSlots;
-            // Si el curso está activo y los cupos restantes exceden los nuevos totales, ajustamos
             if (coursesState[code].remainingSlots > totalSlots) {
                 coursesState[code].remainingSlots = totalSlots;
             }
             saveCoursesState(coursesState);
             renderButtons();
             if (currentSelectedAircraft && currentSelectedAircraft.code === code) showAircraftDetails(currentSelectedAircraft);
+        }
+    }
+
+    function getCourseHorarios(code) {
+        return coursesState[code]?.horarios || [...DEFAULT_HORARIOS];
+    }
+
+    function updateCourseHorarios(code, horariosArray) {
+        if (coursesState[code]) {
+            coursesState[code].horarios = [...horariosArray];
+            saveCoursesState(coursesState);
+            if (currentSelectedAircraft && currentSelectedAircraft.code === code) {
+                // Actualizar vista detalle si está visible
+                showAircraftDetails(currentSelectedAircraft);
+            }
         }
     }
 
@@ -994,11 +1017,10 @@
         `;
         document.getElementById("dynamicCtaMessage").innerHTML = `🔥 CERTIFICACIÓN ACTIVA: <strong>${aircraft.name}</strong> (${aircraft.levelRaw}). Inscríbete antes del cierre del ciclo. Clases teóricas + prácticas en aeródromo militar.`;
         
-        // Deshabilitar botón si no hay cupos
         const ctaBtn = document.getElementById("ctaMockBtn");
-        if (slots.remaining <= 0) {
+        if (slots.remaining <= 0 || getCourseHorarios(aircraft.code).length === 0) {
             ctaBtn.classList.add("disabled");
-            ctaBtn.title = "Cupos agotados";
+            ctaBtn.title = slots.remaining <= 0 ? "Cupos agotados" : "No hay horarios disponibles";
         } else {
             ctaBtn.classList.remove("disabled");
             ctaBtn.title = "";
@@ -1033,16 +1055,20 @@
         if (e.target === messageModal) closeMessageModal();
     });
 
-    // ---------- Modal de inscripción ----------
+    // ---------- Modal de inscripción (usará horarios del curso actual) ----------
     const modal = document.getElementById("inscriptionModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const submitBtn = document.getElementById("submitInscriptionBtn");
     const horarioContainer = document.getElementById("horarioButtonsContainer");
     let selectedHorarioValue = "";
 
-    function generateHorarioButtons() {
+    function generateHorarioButtonsForCourse(horariosArray) {
         horarioContainer.innerHTML = "";
-        horarios.forEach(horario => {
+        if (!horariosArray || horariosArray.length === 0) {
+            horarioContainer.innerHTML = '<p style="color:#ffaa66;">No hay horarios disponibles para este curso.</p>';
+            return;
+        }
+        horariosArray.forEach(horario => {
             const btn = document.createElement("button");
             btn.textContent = horario;
             btn.classList.add("horario-btn");
@@ -1067,14 +1093,19 @@
             showMessage("Cupos agotados", "Lo sentimos, los cupos para este curso se han agotado.");
             return;
         }
+        const horariosCurso = getCourseHorarios(currentSelectedAircraft.code);
+        if (horariosCurso.length === 0) {
+            showMessage("Sin horarios", "Este curso no tiene horarios configurados. Contacte al administrador.");
+            return;
+        }
         if (hasPosted(currentSelectedAircraft.code)) {
             showMessage("Ya postulado", "❌ Ya te has postulado a este curso. No puedes volver a hacerlo.");
             return;
         }
         document.getElementById("postulanteNombre").value = "";
-        document.querySelectorAll(".horario-btn").forEach(b => b.classList.remove("selected"));
         selectedHorarioValue = "";
         document.getElementById("selectedHorario").value = "";
+        generateHorarioButtonsForCourse(horariosCurso);
         modal.style.display = "flex";
     }
 
@@ -1137,7 +1168,6 @@
 
         const success = await sendToDiscord(postulante, selectedHorarioValue, currentSelectedAircraft);
         if (success) {
-            // Consumir cupo
             if (consumeSlot(currentSelectedAircraft.code)) {
                 savePostedCourse(currentSelectedAircraft.code);
                 showMessage("Inscripción exitosa", "✅ Postulación enviada correctamente.");
@@ -1164,9 +1194,88 @@
 
     function hidePasswordModal() { passwordModal.style.display = "none"; }
 
-    // Renderizado del panel de admin (cursos + horarios)
+    // Modal para editar horarios de un curso específico
+    const horariosModal = document.getElementById("horariosModal");
+    const horariosModalTitle = document.getElementById("horariosModalTitle");
+    const horariosModalList = document.getElementById("horariosModalList");
+    const modalNewHourSelect = document.getElementById("modalNewHourSelect");
+    const modalAddHorarioBtn = document.getElementById("modalAddHorarioBtn");
+    const closeHorariosModalBtn = document.getElementById("closeHorariosModalBtn");
+    let currentEditingCourseCode = null;
+
+    function fillHourSelectForModal() {
+        modalNewHourSelect.innerHTML = "";
+        for (let h = 0; h < 24; h++) {
+            for (let m of [0, 30]) {
+                const hourStr = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+                const option = document.createElement("option");
+                option.value = hourStr;
+                option.textContent = hourStr;
+                modalNewHourSelect.appendChild(option);
+            }
+        }
+    }
+
+    function openHorariosModal(courseCode) {
+        currentEditingCourseCode = courseCode;
+        const aircraft = allAircraft.find(a => a.code === courseCode);
+        horariosModalTitle.textContent = `Editar horarios - ${aircraft.name}`;
+        renderHorariosModalList();
+        horariosModal.style.display = "flex";
+    }
+
+    function renderHorariosModalList() {
+        if (!currentEditingCourseCode) return;
+        const horarios = getCourseHorarios(currentEditingCourseCode);
+        horariosModalList.innerHTML = "";
+        if (horarios.length === 0) {
+            horariosModalList.innerHTML = '<p style="color:#ffaa66;">No hay horarios configurados para este curso.</p>';
+        } else {
+            horarios.forEach((h, idx) => {
+                const span = document.createElement("span");
+                span.className = "horario-item";
+                span.innerHTML = `${h} <button class="remove-horario-modal" data-idx="${idx}">✖</button>`;
+                horariosModalList.appendChild(span);
+            });
+        }
+        // Eventos para eliminar
+        document.querySelectorAll(".remove-horario-modal").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                const idx = parseInt(btn.getAttribute("data-idx"));
+                const horariosCurr = getCourseHorarios(currentEditingCourseCode);
+                horariosCurr.splice(idx, 1);
+                updateCourseHorarios(currentEditingCourseCode, horariosCurr);
+                renderHorariosModalList();
+            });
+        });
+    }
+
+    function addHorarioToCourse() {
+        if (!currentEditingCourseCode) return;
+        const newHour = modalNewHourSelect.value;
+        const horariosCurr = getCourseHorarios(currentEditingCourseCode);
+        if (!horariosCurr.includes(newHour)) {
+            horariosCurr.push(newHour);
+            // Ordenar alfabéticamente (por hora)
+            horariosCurr.sort((a,b) => a.localeCompare(b));
+            updateCourseHorarios(currentEditingCourseCode, horariosCurr);
+            renderHorariosModalList();
+        } else {
+            showMessage("Horario duplicado", "Ese horario ya está en la lista.");
+        }
+    }
+
+    function closeHorariosModal() {
+        horariosModal.style.display = "none";
+        currentEditingCourseCode = null;
+    }
+
+    modalAddHorarioBtn.addEventListener("click", addHorarioToCourse);
+    closeHorariosModalBtn.addEventListener("click", closeHorariosModal);
+    window.addEventListener("click", (e) => { if (e.target === horariosModal) closeHorariosModal(); });
+
+    // Renderizado del panel de admin (cursos)
     function renderAdminPanel() {
-        // Cursos
         const container = document.getElementById("adminCoursesList");
         if (!container) return;
         container.innerHTML = "";
@@ -1191,11 +1300,11 @@
                 <button class="activate-btn" data-code="${ac.code}">Activar</button>
                 <button class="deactivate-btn" data-code="${ac.code}" ${!active ? 'disabled' : ''}>Desactivar</button>
                 <button class="update-slots-btn" data-code="${ac.code}">Actualizar cupos</button>
+                <button class="edit-horarios-btn" data-code="${ac.code}">⌚ Horarios</button>
             `;
             container.appendChild(row);
         });
 
-        // Eventos para botones de cursos
         document.querySelectorAll(".activate-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 const code = btn.getAttribute("data-code");
@@ -1222,55 +1331,12 @@
                 }
             });
         });
-
-        // Horarios
-        renderHorariosAdmin();
-    }
-
-    function renderHorariosAdmin() {
-        const horariosContainer = document.getElementById("horariosList");
-        if (!horariosContainer) return;
-        horariosContainer.innerHTML = "";
-        horarios.forEach((horario, idx) => {
-            const span = document.createElement("span");
-            span.className = "horario-item";
-            span.innerHTML = `${horario} <button class="remove-horario" data-index="${idx}">✖</button>`;
-            horariosContainer.appendChild(span);
-        });
-        document.querySelectorAll(".remove-horario").forEach(btn => {
+        document.querySelectorAll(".edit-horarios-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
-                const idx = parseInt(btn.getAttribute("data-index"));
-                horarios.splice(idx, 1);
-                saveHorarios();
-                renderAdminPanel(); // refrescar
+                const code = btn.getAttribute("data-code");
+                openHorariosModal(code);
             });
         });
-    }
-
-    function fillHourSelect() {
-        const select = document.getElementById("newHourSelect");
-        select.innerHTML = "";
-        for (let h = 0; h < 24; h++) {
-            for (let m of [0, 30]) {
-                const hourStr = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
-                const option = document.createElement("option");
-                option.value = hourStr;
-                option.textContent = hourStr;
-                select.appendChild(option);
-            }
-        }
-    }
-
-    function addHorario() {
-        const select = document.getElementById("newHourSelect");
-        const newHour = select.value;
-        if (!horarios.includes(newHour)) {
-            horarios.push(newHour);
-            saveHorarios();
-            renderAdminPanel();
-        } else {
-            showMessage("Horario duplicado", "Ese horario ya está en la lista.");
-        }
     }
 
     function openAdminPanel() {
@@ -1294,7 +1360,6 @@
 
     document.getElementById("adminButton").addEventListener("click", showPasswordModal);
     document.getElementById("closeAdminPanel").addEventListener("click", closeAdminPanel);
-    document.getElementById("addHorarioBtn").addEventListener("click", addHorario);
 
     // ---------- Ocultar consola ----------
     (function() {
@@ -1337,17 +1402,19 @@
                 if (warn) warn.remove();
             }
             const ctaBtn = document.getElementById("ctaMockBtn");
-            if (slots.remaining <= 0) ctaBtn.classList.add("disabled");
-            else ctaBtn.classList.remove("disabled");
+            if (slots.remaining <= 0 || getCourseHorarios(currentSelectedAircraft.code).length === 0) {
+                ctaBtn.classList.add("disabled");
+            } else {
+                ctaBtn.classList.remove("disabled");
+            }
         }
     }, 60000);
 
     // Inicialización
     document.addEventListener("DOMContentLoaded", () => {
-        fillHourSelect();
+        fillHourSelectForModal();
         checkExpirations();
         renderButtons();
-        generateHorarioButtons();
 
         document.getElementById("backToFleetBtn").addEventListener("click", resetToFleet);
         document.getElementById("detailViewContainer").style.display = "none";
@@ -1361,8 +1428,14 @@
     document.getElementById("ctaMockBtn").addEventListener("click", () => {
         if (currentSelectedAircraft && isCourseActive(currentSelectedAircraft.code)) {
             const slots = getCourseSlots(currentSelectedAircraft.code);
-            if (slots.remaining > 0) openModal();
-            else showMessage("Cupos agotados", "Lo sentimos, los cupos para este curso se han agotado.");
+            const horarios = getCourseHorarios(currentSelectedAircraft.code);
+            if (slots.remaining <= 0) {
+                showMessage("Cupos agotados", "Lo sentimos, los cupos para este curso se han agotado.");
+            } else if (horarios.length === 0) {
+                showMessage("Sin horarios", "Este curso no tiene horarios configurados. Contacte al administrador.");
+            } else {
+                openModal();
+            }
         } else {
             showMessage("Sin curso seleccionado", "Primero selecciona una aeronave con curso activo desde el catálogo.");
         }
