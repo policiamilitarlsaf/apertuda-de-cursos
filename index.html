@@ -1440,6 +1440,97 @@
             showMessage("Sin curso seleccionado", "Primero selecciona una aeronave con curso activo desde el catálogo.");
         }
     });
+    // Inicialización
+    document.addEventListener("DOMContentLoaded", () => {
+        fillHourSelectForModal();
+        checkExpirations();
+        renderButtons();
+
+        document.getElementById("backToFleetBtn").addEventListener("click", resetToFleet);
+        document.getElementById("detailViewContainer").style.display = "none";
+        document.getElementById("fleetButtonsContainer").style.display = "block";
+    });
+
+    closeModalBtn.addEventListener("click", closeModal);
+    submitBtn.addEventListener("click", handleSubmit);
+    window.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+
+    document.getElementById("ctaMockBtn").addEventListener("click", () => {
+        if (currentSelectedAircraft && isCourseActive(currentSelectedAircraft.code)) {
+            const slots = getCourseSlots(currentSelectedAircraft.code);
+            const horarios = getCourseHorarios(currentSelectedAircraft.code);
+            if (slots.remaining <= 0) {
+                showMessage("Cupos agotados", "Lo sentimos, los cupos para este curso se han agotado.");
+            } else if (horarios.length === 0) {
+                showMessage("Sin horarios", "Este curso no tiene horarios configurados. Contacte al administrador.");
+            } else {
+                openModal();
+            }
+        } else {
+            showMessage("Sin curso seleccionado", "Primero selecciona una aeronave con curso activo desde el catálogo.");
+        }
+    });
+
+    // ========== AQUÍ VA EL BLOQUE DE PROTECCIÓN ==========
+    // Deshabilitar clic derecho
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        return false;
+    });
+
+    // Deshabilitar combinaciones de teclado para abrir herramientas de desarrollador
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'F12') {
+            e.preventDefault();
+            return false;
+        }
+        if ((e.ctrlKey && e.shiftKey && e.key === 'I') || (e.metaKey && e.altKey && e.key === 'I')) {
+            e.preventDefault();
+            return false;
+        }
+        if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+            e.preventDefault();
+            return false;
+        }
+        if ((e.ctrlKey && e.key === 'u') || (e.metaKey && e.key === 'u')) {
+            e.preventDefault();
+            return false;
+        }
+        if ((e.ctrlKey && e.key === 's') || (e.metaKey && e.key === 's')) {
+            e.preventDefault();
+            return false;
+        }
+        if (e.ctrlKey && e.shiftKey && e.key === 'J') {
+            e.preventDefault();
+            return false;
+        }
+        if (e.ctrlKey && e.shiftKey && e.key === 'K') {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // Limpiar consola cada 2 segundos
+    setInterval(() => {
+        console.clear();
+    }, 2000);
+
+    // Anular todas las funciones de consola
+    const noop = () => {};
+    console.log = noop;
+    console.info = noop;
+    console.warn = noop;
+    console.error = noop;
+    console.debug = noop;
+    console.trace = noop;
+    console.table = noop;
+
+    // Evitar que se muestren errores no capturados en consola
+    window.addEventListener('error', (e) => {
+        e.preventDefault();
+        return true;
+    });
+    // ========== FIN DEL BLOQUE DE PROTECCIÓN ==========
 </script>
 </body>
 </html>
