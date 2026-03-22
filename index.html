@@ -788,12 +788,13 @@
     }
 
     async function sendToDiscord(postulante, horario, aircraft) {
-        const fecha = new Date().toISOString(); // UTC
+        const now = new Date();
+const fecha = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')} | ${String(now.getUTCHours()).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}`;
         const embed = {
             title: "📝 NUEVA POSTULACIÓN",
             color: 0xc4a747,
             fields: [
-                { name: "🕒 Fecha (UTC)", value: fecha, inline: true },
+                { name: "🕒 Fecha", value: fecha, inline: true },
                 { name: "✈️ Aeronave", value: `${aircraft.name} (${aircraft.code})`, inline: true },
                 { name: "👤 Postulante", value: postulante, inline: false },
                 { name: "⏰ Horario solicitado", value: horario, inline: false }
