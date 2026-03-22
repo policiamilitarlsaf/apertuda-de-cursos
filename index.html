@@ -5,13 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Fuerza Aérea · Certificación de Aeronaves | Curso Oficial</title>
     <style>
-        /* ... (todo el CSS igual que antes, no lo repito por brevedad, pero debe estar completo) ... */
-        /* Asegúrate de incluir todo el CSS de la versión anterior */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
             background: linear-gradient(135deg, #0b2b3b, #123e55, #1b5a7a);
             font-family: 'Segoe UI', 'Roboto', 'Oswald', system-ui, sans-serif;
@@ -23,6 +22,7 @@
             align-items: center;
             padding: 30px 20px;
         }
+
         .main-panel {
             max-width: 1024px;
             width: 100%;
@@ -34,14 +34,15 @@
             box-shadow: 0 20px 35px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(196, 167, 71, 0.3);
             transition: all 0.2s;
         }
+
         .buttons-fleet {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
             gap: 18px;
             margin: 20px 0 10px;
         }
+
         .aircraft-btn {
-            background: linear-gradient(145deg, #1f3e54, #142d40);
             border: none;
             border-left: 5px solid #c4a747;
             color: #f5f2e6;
@@ -58,27 +59,42 @@
             text-align: center;
             position: relative;
         }
+
+        /* Fondo activo (verde suave) */
+        .aircraft-btn.active {
+            background: linear-gradient(145deg, #2e7d64, #246b55);
+        }
+
+        /* Fondo inactivo (rojo suave) */
+        .aircraft-btn.inactive {
+            background: linear-gradient(145deg, #a15542, #8a4636);
+        }
+
         .aircraft-btn:hover {
             transform: translateY(-3px);
-            background: linear-gradient(145deg, #2b5778, #1c405b);
             box-shadow: 0 9px 0 #0a1a2a;
             border-left-width: 8px;
             border-left-color: #e6bc5e;
         }
+
+        .aircraft-btn.active:hover {
+            background: linear-gradient(145deg, #3b9a7c, #2e7d64);
+        }
+
+        .aircraft-btn.inactive:hover {
+            background: linear-gradient(145deg, #c26a54, #a15542);
+        }
+
         .aircraft-btn:active {
             transform: translateY(4px);
             box-shadow: 0 2px 0 #0a1a2a;
         }
-        .status-icon {
-            position: absolute;
-            top: 8px;
-            right: 12px;
-            font-size: 1.2rem;
-        }
+
         .detail-content {
             display: none;
             animation: fadeSlideUp 0.35s ease-out;
         }
+
         @keyframes fadeSlideUp {
             from {
                 opacity: 0;
@@ -89,6 +105,7 @@
                 transform: translateY(0);
             }
         }
+
         .detail-header {
             display: flex;
             justify-content: space-between;
@@ -98,16 +115,19 @@
             border-bottom: 2px solid #c4a747;
             padding-bottom: 15px;
         }
+
         .logo-group {
             display: flex;
             gap: 20px;
             align-items: center;
         }
+
         .logo-group img {
             height: 55px;
             width: auto;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
         }
+
         .header-titles h3 {
             font-family: 'Oswald', sans-serif;
             font-size: 1.6rem;
@@ -115,11 +135,13 @@
             letter-spacing: 1px;
             margin-bottom: 4px;
         }
+
         .header-titles p {
             font-size: 0.85rem;
             text-align: right;
             color: #cbdbe6;
         }
+
         .back-button {
             background: rgba(196, 167, 71, 0.2);
             border: 1px solid #c4a747;
@@ -133,17 +155,20 @@
             transition: all 0.2s;
             backdrop-filter: blur(4px);
         }
+
         .back-button:hover {
             background: #c4a747;
             color: #0a2a3b;
             border-color: #ffdf99;
         }
+
         .aircraft-showcase {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 35px;
             margin: 25px 0 20px;
         }
+
         .info-panel {
             background: rgba(0, 0, 0, 0.55);
             border-radius: 28px;
@@ -151,6 +176,7 @@
             backdrop-filter: blur(4px);
             border: 1px solid rgba(196, 167, 71, 0.5);
         }
+
         .info-panel h1 {
             font-size: 2rem;
             font-family: 'Oswald', sans-serif;
@@ -158,6 +184,7 @@
             margin-bottom: 12px;
             letter-spacing: -0.5px;
         }
+
         .course-tag {
             background: #c4a74720;
             display: inline-block;
@@ -168,18 +195,21 @@
             margin-bottom: 20px;
             border-left: 3px solid #f0c45a;
         }
+
         .spec-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 18px;
             margin: 20px 0;
         }
+
         .spec-card {
             background: #0f2a38;
             border-radius: 20px;
             padding: 12px 16px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
+
         .spec-label {
             font-size: 0.7rem;
             text-transform: uppercase;
@@ -187,6 +217,7 @@
             color: #c4a747;
             letter-spacing: 1px;
         }
+
         .spec-value {
             font-size: 1.2rem;
             font-weight: 700;
@@ -194,6 +225,7 @@
             margin-top: 5px;
             color: #eef4ff;
         }
+
         .level-badge-detail {
             display: inline-block;
             background: #2f6d5c;
@@ -203,6 +235,7 @@
             font-size: 0.85rem;
             margin-top: 8px;
         }
+
         .justify-box {
             background: #08212e;
             padding: 18px;
@@ -212,6 +245,7 @@
             font-size: 0.95rem;
             line-height: 1.5;
         }
+
         .image-panel {
             background: linear-gradient(145deg, #071c28, #103e53);
             border-radius: 32px;
@@ -224,6 +258,7 @@
             overflow: hidden;
             min-height: 340px;
         }
+
         .aircraft-img-detailed {
             width: 100%;
             max-height: 280px;
@@ -231,6 +266,7 @@
             padding: 12px;
             transition: 0.2s;
         }
+
         .model-caption {
             position: absolute;
             bottom: 16px;
@@ -245,6 +281,7 @@
             backdrop-filter: blur(4px);
             letter-spacing: 1px;
         }
+
         .features-row {
             display: flex;
             flex-wrap: wrap;
@@ -252,6 +289,7 @@
             justify-content: space-between;
             margin: 35px 0 25px;
         }
+
         .feature-card {
             background: rgba(0, 0, 0, 0.5);
             flex: 1;
@@ -261,10 +299,12 @@
             border: 1px solid #c4a74760;
             transition: 0.2s;
         }
+
         .feature-card .emoji-big {
             font-size: 2.2rem;
             margin-bottom: 8px;
         }
+
         .cta-section {
             background: rgba(196, 167, 71, 0.12);
             border-radius: 28px;
@@ -273,6 +313,7 @@
             margin: 20px 0 20px;
             border: 1px solid #c4a747;
         }
+
         .cta-button {
             display: inline-block;
             background: linear-gradient(135deg, #e6b422, #c4941a);
@@ -289,16 +330,19 @@
             font-family: 'Oswald', sans-serif;
             box-shadow: 0 5px 0 #7a5c1a;
         }
+
         .cta-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 7px 0 #7a5c1a;
             background: #ffcd44;
         }
+
         .inscription-note {
             font-size: 0.8rem;
             margin-top: 18px;
             color: #ddd6c6;
         }
+
         footer {
             text-align: center;
             font-size: 0.75rem;
@@ -307,7 +351,8 @@
             padding-top: 18px;
             color: #b9c7d4;
         }
-        /* Modal */
+
+        /* Modal general */
         .modal {
             display: none;
             position: fixed;
@@ -320,6 +365,7 @@
             justify-content: center;
             align-items: center;
         }
+
         .modal-content {
             background: #0a2a3b;
             border-radius: 32px;
@@ -329,19 +375,23 @@
             border: 1px solid #c4a747;
             color: white;
         }
+
         .modal-content h2 {
             font-family: Oswald;
             color: #f0c45a;
             margin-bottom: 20px;
         }
+
         .form-group {
             margin-bottom: 20px;
         }
+
         .form-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: bold;
         }
+
         .form-group input {
             width: 100%;
             padding: 12px;
@@ -351,12 +401,14 @@
             color: white;
             font-size: 1rem;
         }
+
         .horario-buttons {
             display: flex;
             flex-wrap: wrap;
             gap: 12px;
             margin-top: 10px;
         }
+
         .horario-btn {
             background: #2c5a7a;
             border: none;
@@ -367,17 +419,20 @@
             font-weight: bold;
             transition: 0.2s;
         }
+
         .horario-btn.selected {
             background: #c4a747;
             color: #0a2a3b;
             box-shadow: 0 0 0 2px #ffdf99;
         }
+
         .modal-buttons {
             display: flex;
             justify-content: flex-end;
             gap: 15px;
             margin-top: 25px;
         }
+
         .modal-buttons button {
             padding: 8px 20px;
             border-radius: 40px;
@@ -385,14 +440,17 @@
             cursor: pointer;
             font-weight: bold;
         }
+
         .submit-btn {
             background: #c4a747;
             color: #0a2a3b;
         }
+
         .cancel-btn {
             background: #5a7d9a;
             color: white;
         }
+
         /* Admin Panel */
         .admin-button {
             position: fixed;
@@ -474,6 +532,7 @@
             color: #f0c45a;
             margin-top: 5px;
         }
+
         @media (max-width: 780px) {
             .aircraft-showcase {
                 grid-template-columns: 1fr;
@@ -486,11 +545,13 @@
                 grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
             }
         }
+
         @media (min-width: 1024px) {
             .main-panel {
                 padding: 28px 32px;
             }
         }
+
         .aircraft-name-large {
             font-family: 'Oswald', monospace;
             font-size: 1.8rem;
@@ -586,14 +647,27 @@
         </div>
         <div class="form-group">
             <label>Selecciona un horario *</label>
-            <div id="horarioButtonsContainer" class="horario-buttons">
-                <!-- Los botones de horario se generan dinámicamente -->
-            </div>
+            <div id="horarioButtonsContainer" class="horario-buttons"></div>
             <input type="hidden" id="selectedHorario" value="">
         </div>
         <div class="modal-buttons">
             <button class="cancel-btn" id="closeModalBtn">Cancelar</button>
             <button class="submit-btn" id="submitInscriptionBtn">Postularse</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para contraseña de administrador -->
+<div id="passwordModal" class="modal">
+    <div class="modal-content">
+        <h2>🔐 Acceso Administrador</h2>
+        <div class="form-group">
+            <label>Air Education & Training Command dice:</label>
+            <input type="password" id="adminPasswordInput" placeholder="Contraseña" autocomplete="off">
+        </div>
+        <div class="modal-buttons">
+            <button class="cancel-btn" id="closePasswordModalBtn">Cancelar</button>
+            <button class="submit-btn" id="submitPasswordBtn">Ingresar</button>
         </div>
     </div>
 </div>
@@ -610,16 +684,17 @@
 
 <script>
     // ========== CONFIGURACIÓN ==========
-    const DEFAULT_DURATION_HOURS = 24; // Duración por defecto en horas
-    const ADMIN_PASSWORD = "admin123"; // 🔐 Contraseña para acceder al panel de admin
+    const DEFAULT_DURATION_HOURS = 24;
+    // La contraseña se almacena en un closure para no exponerla globalmente
+    const ADMIN_PASSWORD = "admin123";
     // ==================================
 
-    // Webhook de Discord
+    // Webhook de Discord (también oculto en closure)
     const webhookUrl = "https://discord.com/api/webhooks/1485325637638946946/R0Kicr7Uku6xc4tFrqklDK3gzKQQi0QKD8Akml7ZXm00iJ9eziWTy8dVbCQjlglGFPhk";
     const botName = "INSCRIPCIONES";
     const botAvatar = "https://i.imgur.com/wioFUxA.png";
 
-    // Mapa de imágenes (igual que antes)
+    // Mapa de imágenes
     const imagesMap = {
         cuban800: "https://i.imgur.com/YsMO7XO.png",
         dodo: "https://i.imgur.com/rLiXM9b.png",
@@ -643,7 +718,7 @@
         akula: "https://i.imgur.com/WvBMb0v.png"
     };
 
-    // Datos de aeronaves (20)
+    // Datos de aeronaves
     const planesData = [
         { name: "Cuban 800", code: "cuban800", levelRaw: "Básico", levelType: "basic", funcion: "Entrenamiento inicial y vuelo básico", justificacion: "Avión lento y estable, ideal para aprender despegue, aterrizaje y control." },
         { name: "Dodo", code: "dodo", levelRaw: "Básico", levelType: "basic", funcion: "Vuelo anfibio", justificacion: "Introduce al piloto en manejo de agua y control adicional." },
@@ -675,7 +750,6 @@
         if (stored) {
             return JSON.parse(stored);
         }
-        // Estado inicial: todos inactivos
         const state = {};
         allAircraft.forEach(ac => {
             state[ac.code] = { active: false, expiresAt: null };
@@ -689,7 +763,6 @@
 
     let coursesState = loadCoursesState();
 
-    // Verificar y actualizar expiraciones
     function checkExpirations() {
         let changed = false;
         const now = Date.now();
@@ -702,21 +775,16 @@
         }
         if (changed) {
             saveCoursesState(coursesState);
-            renderButtons(); // Refrescar botones si cambió estado
+            renderButtons();
         }
     }
 
-    // Activar un curso con duración en horas
     function activateCourse(code, durationHours = DEFAULT_DURATION_HOURS) {
         const now = Date.now();
         const expiresAt = now + durationHours * 60 * 60 * 1000;
-        coursesState[code] = {
-            active: true,
-            expiresAt: expiresAt
-        };
+        coursesState[code] = { active: true, expiresAt: expiresAt };
         saveCoursesState(coursesState);
-        renderButtons(); // actualizar UI
-        // Si la vista detalle está mostrando este curso, actualizar también el mensaje
+        renderButtons();
         if (currentSelectedAircraft && currentSelectedAircraft.code === code) {
             showAircraftDetails(currentSelectedAircraft);
         }
@@ -727,13 +795,11 @@
         saveCoursesState(coursesState);
         renderButtons();
         if (currentSelectedAircraft && currentSelectedAircraft.code === code) {
-            // Volver al catálogo o mostrar mensaje
             resetToFleet();
         }
     }
 
     function isCourseActive(code) {
-        // Verificar expiración por si acaso
         if (coursesState[code] && coursesState[code].active && coursesState[code].expiresAt && coursesState[code].expiresAt <= Date.now()) {
             coursesState[code].active = false;
             coursesState[code].expiresAt = null;
@@ -746,7 +812,6 @@
         return coursesState[code] ? coursesState[code].expiresAt : null;
     }
 
-    // Función para formatear tiempo restante
     function formatTimeRemaining(expiresAt) {
         if (!expiresAt) return "";
         const diff = expiresAt - Date.now();
@@ -756,10 +821,8 @@
         return `${hours}h ${minutes}m`;
     }
 
-    // Variables globales
-    let currentSelectedAircraft = null; // Almacena la aeronave seleccionada para postulación
+    let currentSelectedAircraft = null;
 
-    // Obtener postulaciones guardadas desde localStorage (array de códigos)
     function getPostedCourses() {
         const stored = localStorage.getItem("postedCourses");
         return stored ? JSON.parse(stored) : [];
@@ -777,7 +840,6 @@
         return getPostedCourses().includes(courseCode);
     }
 
-    // Funciones de UI
     function getLevelColor(levelRaw) {
         const mapLevels = {
             "Básico": "#2f7d5c",
@@ -797,14 +859,9 @@
         allAircraft.forEach(ac => {
             const active = isCourseActive(ac.code);
             const btn = document.createElement("button");
-            btn.className = "aircraft-btn";
+            btn.className = `aircraft-btn ${active ? 'active' : 'inactive'}`;
             btn.textContent = `${ac.name}  (${ac.levelRaw.substring(0,3)})`;
             btn.title = active ? `Curso de certificación: ${ac.name}` : "Curso no disponible actualmente";
-            // Ícono de estado
-            const statusSpan = document.createElement("span");
-            statusSpan.className = "status-icon";
-            statusSpan.textContent = active ? "🟢" : "🔴";
-            btn.appendChild(statusSpan);
             btn.addEventListener("click", () => {
                 if (active) {
                     showAircraftDetails(ac);
@@ -877,7 +934,7 @@
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    // Modal logic
+    // Modal de inscripción
     const modal = document.getElementById("inscriptionModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const submitBtn = document.getElementById("submitInscriptionBtn");
@@ -885,12 +942,8 @@
     let selectedHorarioValue = "";
 
     const horariosDisponibles = [
-        "08:00 - 10:00",
-        "10:30 - 12:30",
-        "14:00 - 16:00",
-        "16:30 - 18:30",
-        "19:00 - 21:00",
-        "23:00 - 01:00"
+        "08:00 - 10:00", "10:30 - 12:30", "14:00 - 16:00",
+        "16:30 - 18:30", "19:00 - 21:00", "23:00 - 01:00"
     ];
 
     function generateHorarioButtons() {
@@ -946,11 +999,7 @@
             timestamp: new Date().toISOString()
         };
 
-        const payload = {
-            username: botName,
-            avatar_url: botAvatar,
-            embeds: [embed]
-        };
+        const payload = { username: botName, avatar_url: botAvatar, embeds: [embed] };
 
         try {
             const response = await fetch(webhookUrl, {
@@ -968,10 +1017,7 @@
     }
 
     async function handleSubmit() {
-        if (!currentSelectedAircraft) {
-            closeModal();
-            return;
-        }
+        if (!currentSelectedAircraft) { closeModal(); return; }
         if (!isCourseActive(currentSelectedAircraft.code)) {
             alert("Este curso ya no está activo.");
             closeModal();
@@ -985,14 +1031,8 @@
         }
 
         const postulante = document.getElementById("postulanteNombre").value.trim();
-        if (!postulante) {
-            alert("Por favor ingresa tu nombre completo.");
-            return;
-        }
-        if (!selectedHorarioValue) {
-            alert("Por favor selecciona un horario.");
-            return;
-        }
+        if (!postulante) { alert("Por favor ingresa tu nombre completo."); return; }
+        if (!selectedHorarioValue) { alert("Por favor selecciona un horario."); return; }
 
         const success = await sendToDiscord(postulante, selectedHorarioValue, currentSelectedAircraft);
         if (success) {
@@ -1003,7 +1043,22 @@
         }
     }
 
-    // ---------- Panel de administración (con contraseña) ----------
+    // ---------- Administración con modal de contraseña ----------
+    const passwordModal = document.getElementById("passwordModal");
+    const adminPasswordInput = document.getElementById("adminPasswordInput");
+    const closePasswordModalBtn = document.getElementById("closePasswordModalBtn");
+    const submitPasswordBtn = document.getElementById("submitPasswordBtn");
+
+    function showPasswordModal() {
+        adminPasswordInput.value = "";
+        passwordModal.style.display = "flex";
+        adminPasswordInput.focus();
+    }
+
+    function hidePasswordModal() {
+        passwordModal.style.display = "none";
+    }
+
     function renderAdminPanel() {
         const container = document.getElementById("adminCoursesList");
         if (!container) return;
@@ -1026,7 +1081,6 @@
             container.appendChild(row);
         });
 
-        // Asignar eventos después de crear los botones
         document.querySelectorAll(".activate-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 const code = btn.getAttribute("data-code");
@@ -1034,7 +1088,7 @@
                 let hours = parseInt(hoursInput.value);
                 if (isNaN(hours) || hours < 1) hours = DEFAULT_DURATION_HOURS;
                 activateCourse(code, hours);
-                renderAdminPanel(); // refrescar
+                renderAdminPanel();
             });
         });
         document.querySelectorAll(".deactivate-btn").forEach(btn => {
@@ -1046,30 +1100,73 @@
         });
     }
 
-    function toggleAdminPanel() {
-        // 🔐 Solicitar contraseña antes de mostrar el panel
-        const password = prompt("🔒 Ingrese la contraseña de administrador:");
-        if (password !== ADMIN_PASSWORD) {
-            if (password !== null) alert("Contraseña incorrecta.");
-            return;
-        }
+    function openAdminPanel() {
         const panel = document.getElementById("adminPanel");
-        if (panel.style.display === "none" || panel.style.display === "") {
-            renderAdminPanel();
-            panel.style.display = "block";
-        } else {
-            panel.style.display = "none";
-        }
+        renderAdminPanel();
+        panel.style.display = "block";
     }
 
-    // Intervalo para revisar expiraciones cada minuto
+    function closeAdminPanel() {
+        document.getElementById("adminPanel").style.display = "none";
+    }
+
+    // Eventos para el modal de contraseña
+    submitPasswordBtn.addEventListener("click", () => {
+        const entered = adminPasswordInput.value;
+        if (entered === ADMIN_PASSWORD) {
+            hidePasswordModal();
+            openAdminPanel();
+        } else {
+            alert("Contraseña incorrecta.");
+            adminPasswordInput.value = "";
+        }
+    });
+    closePasswordModalBtn.addEventListener("click", hidePasswordModal);
+    window.addEventListener("click", (e) => {
+        if (e.target === passwordModal) hidePasswordModal();
+    });
+
+    // Botón ADMIN ahora muestra el modal de contraseña
+    const adminBtn = document.getElementById("adminButton");
+    adminBtn.addEventListener("click", showPasswordModal);
+
+    document.getElementById("closeAdminPanel").addEventListener("click", closeAdminPanel);
+
+    // ---------- Ocultar consola ----------
+    (function() {
+        // Limpiar consola cada 2 segundos
+        setInterval(() => {
+            console.clear();
+        }, 2000);
+        // Anular todas las funciones de consola
+        const noop = () => {};
+        console.log = noop;
+        console.info = noop;
+        console.warn = noop;
+        console.error = noop;
+        console.debug = noop;
+        console.trace = noop;
+        console.table = noop;
+        // Prevenir que se muestren errores no capturados en consola
+        window.addEventListener('error', (e) => {
+            e.preventDefault();
+            return true;
+        });
+        // También prevenir que se muestre la consola con F12 (no se puede evitar, pero al menos limpiamos)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'U')) {
+                e.preventDefault();
+                console.clear();
+            }
+        });
+    })();
+
+    // Intervalo de expiración
     setInterval(() => {
         checkExpirations();
-        // Si la vista detalle está abierta y el curso expiró, volver al catálogo
         if (currentSelectedAircraft && !isCourseActive(currentSelectedAircraft.code)) {
             resetToFleet();
         }
-        // También actualizar el tiempo restante en la vista detalle si está abierta
         if (currentSelectedAircraft && isCourseActive(currentSelectedAircraft.code)) {
             const expiresAt = getExpiresAt(currentSelectedAircraft.code);
             const timeRemaining = formatTimeRemaining(expiresAt);
@@ -1078,11 +1175,11 @@
                 timerDiv.textContent = `⏳ Tiempo restante para inscripciones: ${timeRemaining}`;
             }
         }
-    }, 60000); // cada minuto
+    }, 60000);
 
-    // Eventos
+    // Inicialización
     document.addEventListener("DOMContentLoaded", () => {
-        checkExpirations(); // primera comprobación
+        checkExpirations();
         renderButtons();
         generateHorarioButtons();
 
@@ -1093,13 +1190,6 @@
         const fleetDiv = document.getElementById("fleetButtonsContainer");
         if (detailDiv) detailDiv.style.display = "none";
         if (fleetDiv) fleetDiv.style.display = "block";
-
-        const adminBtn = document.getElementById("adminButton");
-        adminBtn.addEventListener("click", toggleAdminPanel);
-        const closeAdmin = document.getElementById("closeAdminPanel");
-        closeAdmin.addEventListener("click", () => {
-            document.getElementById("adminPanel").style.display = "none";
-        });
     });
 
     closeModalBtn.addEventListener("click", closeModal);
