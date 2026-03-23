@@ -1017,7 +1017,7 @@
             <img class="aircraft-img-detailed" src="${imgUrl}" alt="${aircraft.name}" onerror="this.onerror=null; this.src='https://i.imgur.com/GfmYqNX.png';">
             <div class="model-caption">${aircraft.name}  |  ${aircraft.code}</div>
         `;
-        document.getElementById("dynamicCtaMessage").innerHTML = `🔥 CERTIFICACIÓN ACTIVA: <strong>${aircraft.name}</strong> (${aircraft.levelRaw}). Inscríbete antes del cierre del ciclo. Clases teóricas + prácticas en aeródromo militar.`;
+        document.getElementById("dynamicCtaMessage").innerHTML = `🔥 CERTIFICACIÓN ACTIVA: <strong>${aircraft.name}</strong> (${aircraft.levelRaw}). Inscríbete antes del cierre del ciclo a las lases teóricas.`;
         
         const ctaBtn = document.getElementById("ctaMockBtn");
         if (slots.remaining <= 0 || getCourseHorarios(aircraft.code).length === 0) {
