@@ -366,9 +366,13 @@
             width: 100%;
             height: 100%;
             background: rgba(0,0,0,0.8);
-            z-index: 1004 !important;
             justify-content: center;
             align-items: center;
+            z-index: 1003;
+        }
+
+        #messageModal {
+            z-index: 1004 !important;
         }
 
         .modal-content {
@@ -704,7 +708,7 @@
     <div class="modal-content">
         <h2>🔐 Acceso Administrador</h2>
         <div class="form-group">
-            <label>Air Education & Training Command:</label>
+            <label>Air Education & Training Command dice:</label>
             <input type="password" id="adminPasswordInput" placeholder="Contraseña" autocomplete="off">
         </div>
         <div class="modal-buttons">
@@ -743,8 +747,8 @@
     // ========== CONFIGURACIÓN ==========
     const DEFAULT_DURATION_HOURS = 24;
     const DEFAULT_SLOTS = 10;
-    const ADMIN_PASSWORD = "Aezakmi";
-    const DEFAULT_HORARIOS = ["00:00"];
+    const ADMIN_PASSWORD = "admin123";
+    const DEFAULT_HORARIOS = ["08:00 - 10:00", "10:30 - 12:30", "14:00 - 16:00", "16:30 - 18:30", "19:00 - 21:00", "23:00 - 01:00"];
     // ==================================
 
     // Webhook de Discord
@@ -1041,6 +1045,8 @@
     function showMessage(title, text) {
         messageTitle.textContent = title;
         messageText.textContent = text;
+        // Asegurar que el modal de mensajes esté al final del DOM para que quede por encima
+        document.body.appendChild(messageModal);
         messageModal.style.display = "flex";
     }
 
