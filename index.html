@@ -852,7 +852,7 @@
             active: true,
             expiresAt: expiresAt,
             totalSlots: totalSlots,
-            remainingSlots: totalSlots,
+            remainingSlots: totalSlots, // Inicialmente todos disponibles -> ocupados = 0
             horarios: existingHorarios
         };
         saveCoursesState(coursesState);
@@ -873,12 +873,17 @@
         if (currentSelectedAircraft && currentSelectedAircraft.code === code) resetToFleet();
     }
 
-    function updateCourseSlots(code, totalSlots) {
-        if (coursesState[code]) {
-            coursesState[code].totalSlots = totalSlots;
-            if (coursesState[code].remainingSlots > totalSlots) {
-                coursesState[code].remainingSlots = totalSlots;
-            }
+    // Actualizar cupos totales manteniendo la cantidad de ocupados
+    function updateCourseSlots(code, newTotal) {
+        const state = coursesState[code];
+        if (state) {
+            const oldTotal = state.totalSlots;
+            const oldRemaining = state.remainingSlots;
+            const occupied = oldTotal - oldRemaining; // cupos ya usados
+            let newRemaining = newTotal - occupied;
+            if (newRemaining < 0) newRemaining = 0;
+            state.totalSlots = newTotal;
+            state.remainingSlots = newRemaining;
             saveCoursesState(coursesState);
             renderButtons();
             if (currentSelectedAircraft && currentSelectedAircraft.code === code) showAircraftDetails(currentSelectedAircraft);
@@ -994,8 +999,9 @@
         const expiresAt = getExpiresAt(aircraft.code);
         const timeRemaining = formatTimeRemaining(expiresAt);
         const slots = getCourseSlots(aircraft.code);
-        const slotsText = `🎟️ Cupos disponibles: ${slots.remaining} / ${slots.total}`;
-        const slotsWarning = slots.remaining <= 0 ? '<div class="slots-text" style="color:#ffaa66;">⚠️ Cupos agotados para este curso</div>' : '';
+        const occupied = slots.total - slots.remaining;
+        const occupiedText = `🎟️ Cupos ocupados: ${occupied} / ${slots.total}`;
+        const slotsWarning = (slots.remaining <= 0) ? '<div class="slots-text" style="color:#ffaa66;">⚠️ Se ha alcanzado el límite de inscripciones. No se aceptan más postulantes.</div>' : '';
 
         document.getElementById("aircraftDetailInfo").innerHTML = `
             <h1 class="aircraft-name-large">${aircraft.name}</h1>
@@ -1009,7 +1015,7 @@
             <div style="margin-top: 18px; background: #0e2c3b; border-radius: 18px; padding: 12px;">
                 🚀 <strong>Anuncio de apertura:</strong> La Fuerza Aérea anuncia el ciclo de formación para ${aircraft.name}. Curso intensivo con simulador y vuelo supervisado. Cupos limitados por nivel ${aircraft.levelRaw}.
                 ${timeRemaining ? `<div class="timer-text">⏳ Tiempo restante para inscripciones: ${timeRemaining}</div>` : ''}
-                <div class="slots-text">${slotsText}</div>
+                <div class="slots-text">${occupiedText}</div>
                 ${slotsWarning}
             </div>
         `;
@@ -1045,7 +1051,6 @@
     function showMessage(title, text) {
         messageTitle.textContent = title;
         messageText.textContent = text;
-        // Asegurar que el modal de mensajes esté al final del DOM para que quede por encima
         document.body.appendChild(messageModal);
         messageModal.style.display = "flex";
     }
@@ -1094,7 +1099,7 @@
         }
         const slots = getCourseSlots(currentSelectedAircraft.code);
         if (slots.remaining <= 0) {
-            showMessage("Cupos agotados", "Lo sentimos, los cupos para este curso se han agotado.");
+            showMessage("Cupos agotados", "❌ El número máximo de inscripciones para este curso ha sido alcanzado. No es posible realizar nuevas postulaciones. Podrás volver a postular cuando el curso sea reactivado por el Alto Mando.");
             return;
         }
         const horariosCurso = getCourseHorarios(currentSelectedAircraft.code);
@@ -1155,7 +1160,7 @@
         }
         const slots = getCourseSlots(currentSelectedAircraft.code);
         if (slots.remaining <= 0) {
-            showMessage("Cupos agotados", "Lo sentimos, los cupos para este curso se han agotado.");
+            showMessage("Cupos agotados", "❌ El número máximo de inscripciones para este curso ha sido alcanzado. No es posible realizar nuevas postulaciones. Podrás volver a postular cuando el curso sea reactivado por el Alto Mando.");
             closeModal();
             resetToFleet();
             return;
@@ -1174,7 +1179,7 @@
         if (success) {
             if (consumeSlot(currentSelectedAircraft.code)) {
                 savePostedCourse(currentSelectedAircraft.code);
-                showMessage("Inscripción exitosa", "✅ Postulación enviada correctamente.");
+                showMessage("Inscripción exitosa", "✅ Postulación enviada correctamente. Serás contactado por el comando de instrucción.");
                 closeModal();
                 resetToFleet();
             } else {
@@ -1293,8 +1298,8 @@
                 <div class="course-status" style="background: ${active ? '#2f7d5c' : '#5a3a2e'}">
                     ${active ? `🟢 Activo (${timeRemaining})` : '🔴 Inactivo'}
                 </div>
-                <div><span style="font-size:0.8rem;">Cupos:</span>
-                    <input type="number" id="totalSlots-${ac.code}" value="${slots.total}" min="1" step="1" style="width: 60px;">
+                <div><span style="font-size:0.8rem;">Cupos totales:</span>
+                    <input type="number" id="totalSlots-${ac.code}" value="${slots.total}" min="1" step="1" style="width: 70px;">
                 </div>
                 <div><span style="font-size:0.8rem;">Duración (h):</span>
                     <input type="number" id="duration-${ac.code}" placeholder="Horas" value="${DEFAULT_DURATION_HOURS}" min="1" step="1" style="width: 70px;">
@@ -1364,13 +1369,11 @@
     document.getElementById("closeAdminPanel").addEventListener("click", closeAdminPanel);
 
     // ---------- PROTECCIÓN ----------
-    // Deshabilitar clic derecho
     document.addEventListener('contextmenu', function(e) {
         e.preventDefault();
         return false;
     });
 
-    // Deshabilitar combinaciones de teclado para abrir herramientas de desarrollador
     document.addEventListener('keydown', function(e) {
         if (e.key === 'F12') {
             e.preventDefault();
@@ -1402,12 +1405,10 @@
         }
     });
 
-    // Limpiar consola cada 2 segundos
     setInterval(() => {
         console.clear();
     }, 2000);
 
-    // Anular todas las funciones de consola
     const noop = () => {};
     console.log = noop;
     console.info = noop;
@@ -1417,13 +1418,12 @@
     console.trace = noop;
     console.table = noop;
 
-    // Evitar que se muestren errores no capturados en consola
     window.addEventListener('error', (e) => {
         e.preventDefault();
         return true;
     });
 
-    // ---------- Intervalo de expiración ----------
+    // ---------- Intervalo de expiración y actualización ----------
     setInterval(() => {
         checkExpirations();
         if (currentSelectedAircraft && !isCourseActive(currentSelectedAircraft.code)) resetToFleet();
@@ -1431,10 +1431,11 @@
             const expiresAt = getExpiresAt(currentSelectedAircraft.code);
             const timeRemaining = formatTimeRemaining(expiresAt);
             const slots = getCourseSlots(currentSelectedAircraft.code);
+            const occupied = slots.total - slots.remaining;
             const timerDiv = document.querySelector(".timer-text");
             const slotsDiv = document.querySelector(".slots-text");
             if (timerDiv && timeRemaining) timerDiv.textContent = `⏳ Tiempo restante para inscripciones: ${timeRemaining}`;
-            if (slotsDiv) slotsDiv.textContent = `🎟️ Cupos disponibles: ${slots.remaining} / ${slots.total}`;
+            if (slotsDiv) slotsDiv.textContent = `🎟️ Cupos ocupados: ${occupied} / ${slots.total}`;
             const warningDiv = document.querySelector(".slots-text + .slots-text");
             if (slots.remaining <= 0 && !warningDiv) {
                 const container = document.querySelector(".info-panel div:last-child");
@@ -1442,7 +1443,7 @@
                     const warn = document.createElement("div");
                     warn.className = "slots-text slots-warning";
                     warn.style.color = "#ffaa66";
-                    warn.textContent = "⚠️ Cupos agotados para este curso";
+                    warn.textContent = "⚠️ Se ha alcanzado el límite de inscripciones. No se aceptan más postulantes.";
                     container.appendChild(warn);
                 }
             } else if (slots.remaining > 0) {
@@ -1478,7 +1479,7 @@
             const slots = getCourseSlots(currentSelectedAircraft.code);
             const horarios = getCourseHorarios(currentSelectedAircraft.code);
             if (slots.remaining <= 0) {
-                showMessage("Cupos agotados", "Lo sentimos, los cupos para este curso se han agotado.");
+                showMessage("Cupos agotados", "❌ El número máximo de inscripciones para este curso ha sido alcanzado. No es posible realizar nuevas postulaciones. Podrás volver a postular cuando el curso sea reactivado por el Alto Mando.");
             } else if (horarios.length === 0) {
                 showMessage("Sin horarios", "Este curso no tiene horarios configurados. Contacte al administrador.");
             } else {
